@@ -111,7 +111,7 @@ export default function MyPinsScreen()
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#ece3e3ff',
     },
     title: {
         fontSize: 28,
