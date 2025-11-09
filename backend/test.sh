@@ -17,3 +17,15 @@ curl -X POST http://localhost:5000/locations
 curl -X POST http://localhost:5000/s3info \
   -H "Content-Type: application/json" \
   -d '{"submission_id": "4399ae3a9591a4ca37971f4edcb7777f"}'
+
+
+
+  curl -X POST http://localhost:5000/set_active_status \
+  -H "Content-Type: application/json" \
+  -d '{"submission_id": "4399ae3a9591a4ca37971f4edcb7777f", "is_active": false}'
+
+
+
+  curl -X POST http://localhost8:5000/toggle_occupied \
+  -H "Content-Type: application/json" \
+  -d '{"submission_id": "4399ae3a9591a4ca37971f4edcb7777f"}'
