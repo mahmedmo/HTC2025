@@ -7,6 +7,7 @@ import { useCallback } from 'react';
 import BackButton from '../../components/BackButton';
 import { apiService } from '../../../services/api';
 import { sessionService } from '../../../services/session';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 export default function MyPinsScreen()
 {
@@ -129,11 +130,32 @@ export default function MyPinsScreen()
                             <View style={styles.header}>
                                 <View>
                                     <Text style={styles.count}>Bottle</Text>
-                                    <Text style={styles.location}>{pin.location}</Text>
                                 </View>
                                 <View style={[styles.badge, { backgroundColor: '#10b981' }]}>
                                     <Text style={styles.badgeText}>ACTIVE</Text>
                                 </View>
+                            </View>
+                            
+                            <View style={styles.container}>
+                                <MapView
+                                    style={styles.map}
+                                    initialRegion={{
+                                        latitude: parseFloat(pin.location.split(',')[0]),
+                                        longitude: parseFloat(pin.location.split(',')[1]),
+                                        latitudeDelta: 0.005,
+                                        longitudeDelta: 0.005,
+                                    }}
+                                    scrollEnabled={false}
+                                    zoomEnabled={false}
+                                    rotateEnabled={false}
+                                >
+                                    <Marker
+                                        coordinate={{
+                                            latitude: parseFloat(pin.location.split(',')[0]),
+                                            longitude: parseFloat(pin.location.split(',')[1]),
+                                        }}
+                                    />
+                                </MapView>
                             </View>
                         </View>
                     ))}
@@ -151,9 +173,20 @@ export default function MyPinsScreen()
 }
 
 const styles = StyleSheet.create({
+    cardMap: {
+        width: '100%',
+        height: 150,
+        borderRadius: 8,
+        marginBottom: 12,
+        overflow: 'hidden',
+    },
     container: {
         flex: 1,
         backgroundColor: '#f9fafb',
+    },
+    map: {
+        width: '100%',
+        height: 120,
     },
     title: {
         fontSize: 28,
