@@ -1,31 +1,49 @@
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import { sessionService } from '../services/session';
 
 export default function SplashScreen() {
     const router = useRouter();
 
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            router.replace('/home');
-        }, 2000);
+    useEffect(() =>
+    {
+        const checkAuth = async () =>
+        {
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-        return () => clearTimeout(timeout);
+            // Auto-login with user ID 1 for development
+            await sessionService.saveSession(1, 'dev@test.com', 'Dev User');
+            console.log('[Splash] Auto-logged in as user ID 1');
+
+            router.replace('/home');
+        };
+
+        checkAuth();
     }, []);
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             {/* Changed emoji to something more environment-friendly */}
-            <Text style={styles.title}>♻️</Text>
+            <Image 
+                source={require('./pics/avatar.png')} 
+                style={styles.avatar}
+            />
             {/* Kept original app name for now, but consider renaming for better theme fit */}
-            <Text style={styles.appName}>EcoPing</Text> 
+            <Text style={styles.appName}>Bottle Ping</Text> 
             <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    avatar:{
+        width: 80,
+        height: 80,
+        marginBottom: 10,
+        borderRadius: 40,
+    },
     gradient: {
         flex: 1,
     },
