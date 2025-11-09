@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -86,9 +87,11 @@ export default function LoginScreen() {
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>🍾</Text>
+              <Image 
+                source={require('../pics/avatar.png')} 
+                style={styles.icon}
+              />
               <Text style={styles.appName}>Bottles Ping</Text>
-              <Text style={styles.subtitle}>Log in to your account</Text>
             </View>
 
             {/* Form */}
@@ -144,12 +147,10 @@ export default function LoginScreen() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ece3e3ff',
   },
   keyboardAvoid: {
     flex: 1,
@@ -176,6 +177,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     color: '#6b7280',
+  },
+  icon: {
+    width: 100,
+    height: 100,
+    marginBottom: 16,
+    resizeMode: 'contain',
   },
   form: {
     width: '100%',

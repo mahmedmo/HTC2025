@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     loaderContainer: {
         marginTop: 20,
         padding: 15,
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backgroundColor: '#ece3e3ff',
         borderRadius: 50,
     },
     loader: {

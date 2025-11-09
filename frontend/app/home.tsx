@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -64,7 +64,10 @@ export default function HomeScreen()
                 <Text style={styles.logoutButtonText}>Logout</Text>
             </TouchableOpacity>
 
-            <Text style={styles.title}>🍾</Text>
+            <Image 
+                source={require('./pics/avatar.png')} 
+                style={styles.avatar}
+            />
             <Text style={styles.appName}>Bottles Ping</Text>
             {userName && <Text style={styles.welcomeText}>Welcome, {userName}!</Text>}
             <Text style={styles.subtitle}>Select your role</Text>
@@ -142,31 +145,24 @@ const styles = StyleSheet.create({
         fontSize: 80,
         marginBottom: 10,
     },
-    appName: {
-<<<<<<< HEAD
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: '#047857',
-        marginBottom: 50,
-        letterSpacing: 0.5,
-=======
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#10b981',
-        marginBottom: 10,
-    },
-    welcomeText: {
-        fontSize: 18,
-        color: '#374151',
-        fontWeight: '600',
-        marginBottom: 20,
-    },
-    subtitle: {
-        fontSize: 18,
-        color: '#6b7280',
-        marginBottom: 30,
->>>>>>> origin/master
-    },
+appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#047857',
+    marginBottom: 50,
+    letterSpacing: 0.5,
+},
+welcomeText: {
+    fontSize: 18,
+    color: '#374151',
+    fontWeight: '600',
+    marginBottom: 20,
+},
+subtitle: {
+    fontSize: 18,
+    color: '#6b7280',
+    marginBottom: 30,
+},
     buttonContainer: {
         width: '100%',
         gap: 20,

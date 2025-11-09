@@ -261,7 +261,9 @@ export const apiService = {
         }
     },
 
-    async signup(name: string, email: string, password: string): Promise<IAPIResponse<{ message: string; userId: number }>>
+    async signup(name: string, email: string, password: string): Promise<IAPIResponse<{
+      user: any; message: string; userId: number 
+}>>
     {
         console.log('[API] signup - Request started', { name, email });
 

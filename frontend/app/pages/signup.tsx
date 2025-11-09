@@ -8,7 +8,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -110,7 +111,10 @@ export default function SignUpScreen() {
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>🍾</Text>
+              <Image 
+                source={require('../pics/avatar.png')} 
+                style={styles.icon}
+              />
               <Text style={styles.appName}>Bottles Ping</Text>
               <Text style={styles.subtitle}>Create your account</Text>
             </View>
@@ -189,7 +193,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ece3e3ff',
   },
   keyboardAvoid: {
     flex: 1,
