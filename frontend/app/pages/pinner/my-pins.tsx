@@ -109,7 +109,7 @@ export default function MyPinsScreen()
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <BackButton onPress={handleBackPress} />
+            <BackButton  mode='arrow' />
             <Text style={styles.title}>My Pins</Text>
 
             {loading ? (

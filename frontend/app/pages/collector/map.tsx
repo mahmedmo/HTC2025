@@ -365,7 +365,7 @@ export default function CollectorMapScreen()
                 })}
             </MapView>
 
-            <BackButton onPress={handleBackPress} />
+            <BackButton  mode='arrow' />
 
             <TouchableOpacity
                 style={[styles.findClosestButton, { bottom: 20 + insets.bottom }]}
