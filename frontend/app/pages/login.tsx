@@ -135,6 +135,7 @@ export default function LoginScreen() {
                   <Text style={styles.signUpLink}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
+
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

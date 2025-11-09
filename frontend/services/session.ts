@@ -69,4 +69,9 @@ export const sessionService = {
         const session = await this.getSession();
         return session !== null;
     },
+    async getUserId(): Promise<number | null>
+{
+    const session = await this.getSession();
+    return session?.userId || null;
+}
 };
