@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
@@ -17,15 +17,24 @@ export default function SplashScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             {/* Changed emoji to something more environment-friendly */}
-            <Text style={styles.title}>♻️</Text>
+            <Image 
+                source={require('./pics/avatar.png')} 
+                style={styles.avatar}
+            />
             {/* Kept original app name for now, but consider renaming for better theme fit */}
-            <Text style={styles.appName}>EcoPing</Text> 
+            <Text style={styles.appName}>Bottle Ping</Text> 
             <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    avatar:{
+        width: 80,
+        height: 80,
+        marginBottom: 10,
+        borderRadius: 40,
+    },
     gradient: {
         flex: 1,
     },
