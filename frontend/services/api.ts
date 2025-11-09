@@ -1,7 +1,7 @@
 import { IAPIResponse } from '../types';
 
 
-const API_BASE_URL = 'http://54.157.55.228:5000';
+const API_BASE_URL = 'http://98.92.69.158:5000';
 
 interface ILocationData
 {
@@ -60,7 +60,7 @@ export const apiService = {
 
             if (userId)
             {
-                formData.append('user_id', "1");
+                formData.append('user_id', userId.toString());
             }
 
             console.log('[API] uploadPin - Sending to', `${API_BASE_URL}/upload`);
@@ -261,7 +261,7 @@ export const apiService = {
         }
     },
 
-    async signup(name: string, email: string, password: string): Promise<IAPIResponse<{ message: string; userId: number }>>
+    async signup(name: string, email: string, password: string): Promise<IAPIResponse<{ message: string }>>
     {
         console.log('[API] signup - Request started', { name, email });
 
@@ -269,16 +269,18 @@ export const apiService = {
         {
             console.log('[API] signup - Sending to', `${API_BASE_URL}/add_user`);
 
+            const requestBody: any = {
+                name,
+                email,
+                "": password,
+            };
+
             const response = await fetch(`${API_BASE_URL}/add_user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    password,
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const data = await response.json();
@@ -314,7 +316,113 @@ export const apiService = {
         }
     },
 
-    async login(email: string, password: string): Promise<IAPIResponse<{ message: string; user: any }>>
+    async getUserSubmissions(userId: number): Promise<IAPIResponse<any>>
+    {
+        console.log('[API] getUserSubmissions - Request started', { userId });
+
+        try
+        {
+            const allLocationsResponse = await this.getActiveLocations();
+
+            if (!allLocationsResponse.success || !allLocationsResponse.data)
+            {
+                return allLocationsResponse;
+            }
+
+            const userSubmissions = [];
+            for (const location of allLocationsResponse.data.locations)
+            {
+                if (location.submission_id)
+                {
+                    const s3InfoResponse = await this.getS3Info(location.submission_id);
+                    console.log('[API] getUserSubmissions - Checking submission:', {
+                        submission_id: location.submission_id,
+                        s3_user_id: s3InfoResponse.data?.user_id,
+                        requested_userId: userId,
+                        match: s3InfoResponse.data?.user_id === userId,
+                    });
+                    if (s3InfoResponse.success && s3InfoResponse.data && s3InfoResponse.data.user_id === userId)
+                    {
+                        userSubmissions.push({
+                            ...location,
+                            ...s3InfoResponse.data,
+                        });
+                    }
+                }
+            }
+
+            console.log('[API] getUserSubmissions - Success:', userSubmissions.length, 'submissions');
+            return {
+                success: true,
+                data: {
+                    submissions: userSubmissions,
+                    count: userSubmissions.length,
+                },
+            };
+        }
+        catch (error)
+        {
+            console.error('[API] getUserSubmissions - Error:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to fetch user submissions',
+            };
+        }
+    },
+
+    async markPinComplete(submissionId: string): Promise<IAPIResponse<{ message: string }>>
+    {
+        console.log('[API] markPinComplete - Request started', { submissionId });
+
+        try
+        {
+            console.log('[API] markPinComplete - Sending to', `${API_BASE_URL}/set_active_status`);
+
+            const response = await fetch(`${API_BASE_URL}/set_active_status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    submission_id: submissionId,
+                    is_active: false,
+                }),
+            });
+
+            const data = await response.json();
+
+            console.log('[API] markPinComplete - Response:', {
+                status: response.status,
+                ok: response.ok,
+                data,
+            });
+
+            if (!response.ok)
+            {
+                console.error('[API] markPinComplete - Failed:', data.error);
+                return {
+                    success: false,
+                    error: data.error || 'Failed to mark pin as complete',
+                };
+            }
+
+            console.log('[API] markPinComplete - Success');
+            return {
+                success: true,
+                data: data,
+            };
+        }
+        catch (error)
+        {
+            console.error('[API] markPinComplete - Error:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Network error',
+            };
+        }
+    },
+
+    async login(email: string, password: string): Promise<IAPIResponse<{ message: string; user_id: number; name: string; email: string }>>
     {
         console.log('[API] login - Request started', { email });
 

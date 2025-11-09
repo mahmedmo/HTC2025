@@ -1,30 +1,61 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import BackButton from '../../components/BackButton';
-
-const MOCK_PINS = [
-    {
-        id: '1',
-        bottleCount: 24,
-        estimatedValue: 2.40,
-        status: 'available',
-        createdAt: Date.now() - 3600000,
-        location: '123 Main St',
-    },
-    {
-        id: '2',
-        bottleCount: 12,
-        estimatedValue: 1.20,
-        status: 'claimed',
-        createdAt: Date.now() - 7200000,
-        location: '456 Oak Ave',
-    },
-];
+import { apiService } from '../../../services/api';
+import { sessionService } from '../../../services/session';
 
 export default function MyPinsScreen()
 {
     const router = useRouter();
+    const [pins, setPins] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useFocusEffect(
+        useCallback(() =>
+        {
+            loadUserPins();
+        }, [])
+    );
+
+    const loadUserPins = async () =>
+    {
+        try
+        {
+            setLoading(true);
+            const session = await sessionService.getSession();
+
+            if (!session)
+            {
+                console.log('[MyPins] No session found');
+                router.replace('/pages/login');
+                return;
+            }
+
+            console.log('[MyPins] Session found:', session);
+            const response = await apiService.getUserSubmissions(session.userId);
+
+            if (response.success && response.data)
+            {
+                setPins(response.data.submissions);
+            }
+            else
+            {
+                console.error('[MyPins] Failed to load pins:', response.error);
+            }
+        }
+        catch (error)
+        {
+            console.error('[MyPins] Error loading pins:', error);
+        }
+        finally
+        {
+            setLoading(false);
+        }
+    };
 
     const handleBackPress = () =>
     {
@@ -79,24 +110,35 @@ export default function MyPinsScreen()
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <BackButton onPress={handleBackPress} />
             <Text style={styles.title}>My Pins</Text>
-            <ScrollView style={styles.list}>
-                {MOCK_PINS.map(pin => (
-                    <View key={pin.id} style={styles.card}>
-                        <View style={styles.header}>
-                            <View>
-                                <Text style={styles.count}>{pin.bottleCount} bottles</Text>
-                                <Text style={styles.value}>${pin.estimatedValue.toFixed(2)}</Text>
-                            </View>
-                            <View style={[styles.badge, { backgroundColor: getStatusColor(pin.status) }]}>
-                                <Text style={styles.badgeText}>{getStatusText(pin.status)}</Text>
+
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#10b981" />
+                    <Text style={styles.loadingText}>Loading your pins...</Text>
+                </View>
+            ) : pins.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyIcon}>📍</Text>
+                    <Text style={styles.emptyText}>No pins yet</Text>
+                    <Text style={styles.emptySubtext}>Start by pinning some bottles!</Text>
+                </View>
+            ) : (
+                <ScrollView style={styles.list}>
+                    {pins.map(pin => (
+                        <View key={pin.submission_id} style={styles.card}>
+                            <View style={styles.header}>
+                                <View>
+                                    <Text style={styles.count}>Bottle</Text>
+                                    <Text style={styles.location}>{pin.location}</Text>
+                                </View>
+                                <View style={[styles.badge, { backgroundColor: '#10b981' }]}>
+                                    <Text style={styles.badgeText}>ACTIVE</Text>
+                                </View>
                             </View>
                         </View>
-
-                        <Text style={styles.location}>{pin.location}</Text>
-                        <Text style={styles.time}>{formatTime(pin.createdAt)}</Text>
-                    </View>
-                ))}
-            </ScrollView>
+                    ))}
+                </ScrollView>
+            )}
 
             <TouchableOpacity
                 style={styles.button}
@@ -121,6 +163,36 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         textAlign: 'center',
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#6b7280',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    emptyIcon: {
+        fontSize: 64,
+        marginBottom: 16,
+    },
+    emptyText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#374151',
+        marginBottom: 8,
+    },
+    emptySubtext: {
+        fontSize: 16,
+        color: '#6b7280',
+    },
     list: {
         flex: 1,
         padding: 20,
@@ -141,12 +213,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: '#374151',
-    },
-    value: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#10b981',
-        marginTop: 5,
+        marginBottom: 8,
     },
     badge: {
         paddingHorizontal: 12,
@@ -161,11 +228,11 @@ const styles = StyleSheet.create({
     location: {
         fontSize: 14,
         color: '#6b7280',
-        marginBottom: 5,
     },
-    time: {
+    submissionId: {
         fontSize: 12,
         color: '#9ca3af',
+        fontFamily: 'monospace',
     },
     button: {
         backgroundColor: '#10b981',

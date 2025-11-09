@@ -44,11 +44,10 @@ export default function LoginScreen() {
       if (response.success && response.data)
       {
         await sessionService.saveSession(
-          response.data.user.userId,
-          response.data.user.email,
-          response.data.user.name
+          response.data.user_id,
+          response.data.email,
+          response.data.name
         );
-
         router.replace('/home');
       }
       else

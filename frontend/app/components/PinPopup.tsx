@@ -136,6 +136,13 @@ export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupPr
                 source={{ uri: pin.imageUrl }}
                 style={styles.bottleImage}
                 resizeMode="cover"
+                onError={(error) => {
+                  console.log('[PinPopup] Image load error:', error.nativeEvent.error);
+                  console.log('[PinPopup] Image URL:', pin.imageUrl);
+                }}
+                onLoad={() => {
+                  console.log('[PinPopup] Image loaded successfully:', pin.imageUrl);
+                }}
               />
             ) : (
               <View style={styles.placeholderImage}>

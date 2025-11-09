@@ -8,6 +8,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { MAPS_CONFIG } from '../../../config/maps';
 import { getRoute, TravelMode } from '../../../services/routing';
 import BackButton from '../../components/BackButton';
+import { apiService } from '../../../services/api';
 
 interface RoutePoint
 {
@@ -330,13 +331,41 @@ export default function NavigatePickupScreen()
         }
     };
 
-    const confirmPickup = () =>
+    const confirmPickup = async () =>
     {
         if (!isNearby)
         {
             return;
         }
-        router.push('/pages/collector/navigate-depot');
+
+        const submissionId = params.submissionId as string;
+
+        if (submissionId)
+        {
+            const result = await apiService.markPinComplete(submissionId);
+
+            if (!result.success)
+            {
+                console.error('[NavigatePickup] Failed to mark pin complete:', result.error);
+            }
+            else
+            {
+                console.log('[NavigatePickup] Pin marked as complete');
+            }
+        }
+
+        Alert.alert(
+            'Bottles Collected!',
+            `You've successfully collected ${bottleCount} bottles. Great work!`,
+            [
+                {
+                    text: 'Done',
+                    onPress: () => {
+                        router.replace('/pages/collector/map');
+                    },
+                },
+            ]
+        );
     };
 
     const formatDistance = (meters: number): string =>

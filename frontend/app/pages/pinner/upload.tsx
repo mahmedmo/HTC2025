@@ -23,7 +23,12 @@ export default function UploadScreen()
             const session = await sessionService.getSession();
             if (session)
             {
+                console.log('[Upload] Setting userId from session:', session.userId);
                 setUserId(session.userId);
+            }
+            else
+            {
+                console.log('[Upload] No session found, using default userId: 1');
             }
         };
 
@@ -79,6 +84,7 @@ export default function UploadScreen()
 
             const currentLocation = await Location.getCurrentPositionAsync({});
 
+            console.log('[Upload] Uploading pin with userId:', userId);
             const result = await apiService.uploadPin(
                 image,
                 {

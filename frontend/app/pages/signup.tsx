@@ -62,22 +62,31 @@ export default function SignUpScreen() {
 
     try
     {
-      const response = await apiService.signup(formData.fullName, formData.email, formData.password);
+      const signupResponse = await apiService.signup(formData.fullName, formData.email, formData.password);
 
-      if (response.success && response.data)
+      if (signupResponse.success)
       {
-        await sessionService.saveSession(
-          response.data.user.userId,
-          response.data.user.email,
-          response.data.user.name
-        );
+        const loginResponse = await apiService.login(formData.email, formData.password);
 
-        Alert.alert('Success', 'Account created successfully!');
-        router.replace('/home');
+        if (loginResponse.success && loginResponse.data)
+        {
+          await sessionService.saveSession(
+            loginResponse.data.user_id,
+            loginResponse.data.email,
+            loginResponse.data.name
+          );
+          Alert.alert('Success', 'Account created successfully!');
+          router.replace('/home');
+        }
+        else
+        {
+          Alert.alert('Error', 'Account created but login failed. Please try logging in manually.');
+          router.replace('/pages/login');
+        }
       }
       else
       {
-        Alert.alert('Error', response.error || 'Failed to create account. Please try again.');
+        Alert.alert('Error', signupResponse.error || 'Failed to create account. Please try again.');
       }
     }
     catch (error)

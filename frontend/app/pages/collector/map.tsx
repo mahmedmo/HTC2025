@@ -68,7 +68,8 @@ export default function CollectorMapScreen()
             const claimExpiry = now + (30 * 60 * 1000);
 
             let mappedPins: IPin[] = result.data.locations.map((loc, index) => ({
-                pinId: `pin-${index}`,
+                pinId: loc.submission_id || `pin-${index}`,
+                submissionId: loc.submission_id,
                 creatorId: 'unknown',
                 location: {
                     lat: loc.lat,
@@ -126,7 +127,7 @@ export default function CollectorMapScreen()
         return adjustedPins;
     };
 
-    const handlePinPress = (pinId: string) =>
+    const handlePinPress = async (pinId: string) =>
     {
         const pin = pins.find(p => p.pinId === pinId);
         if (pin)
@@ -152,7 +153,27 @@ export default function CollectorMapScreen()
                 useNativeDriver: false,
             }).start();
 
-            setSelectedPin(pin);
+            // Fetch S3 image if submission_id exists
+            let pinWithImage = pin;
+            if (pin.submissionId) {
+                const s3Result = await apiService.getS3Info(pin.submissionId);
+                if (s3Result.success && s3Result.data) {
+                    // Try multiple S3 URL formats
+                    const urlFormats = [
+                        `https://images-9912.s3.us-east-1.amazonaws.com/${s3Result.data.s3_key}`,
+                        `https://s3.us-east-1.amazonaws.com/images-9912/${s3Result.data.s3_key}`,
+                        `https://images-9912.s3.amazonaws.com/${s3Result.data.s3_key}`,
+                    ];
+                    const imageUrl = urlFormats[0]; // Try the first one
+                    console.log('[Map] Constructed image URL:', imageUrl);
+                    console.log('[Map] S3 key:', s3Result.data.s3_key);
+                    pinWithImage = { ...pin, imageUrl };
+                } else {
+                    console.log('[Map] Failed to get S3 info:', s3Result.error);
+                }
+            }
+
+            setSelectedPin(pinWithImage);
             setShowPopup(true);
 
             // Animate camera to pin
@@ -192,6 +213,7 @@ export default function CollectorMapScreen()
             pathname: '/pages/collector/navigate-pickup',
             params: {
                 pinId: pin.pinId,
+                submissionId: pin.submissionId || '',
                 latitude: pin.location.lat.toString(),
                 longitude: pin.location.lng.toString(),
                 bottleCount: pin.bottleCount.toString(),

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
@@ -13,11 +13,24 @@ export default function SplashScreen() {
         {
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Auto-login with user ID 1 for development
-            await sessionService.saveSession(1, 'dev@test.com', 'Dev User');
-            console.log('[Splash] Auto-logged in as user ID 1');
+            const isAuthenticated = await sessionService.isAuthenticated();
+            const session = await sessionService.getSession();
 
-            router.replace('/home');
+            console.log('[Splash] Authentication check:', {
+                isAuthenticated,
+                session,
+            });
+
+            if (isAuthenticated)
+            {
+                console.log('[Splash] User is authenticated, navigating to home');
+                router.replace('/home');
+            }
+            else
+            {
+                console.log('[Splash] User is NOT authenticated, navigating to login');
+                router.replace('/pages/login');
+            }
         };
 
         checkAuth();
@@ -25,72 +38,32 @@ export default function SplashScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            {/* Changed emoji to something more environment-friendly */}
-            <Image 
-                source={require('./pics/avatar.png')} 
-                style={styles.avatar}
-            />
-            {/* Kept original app name for now, but consider renaming for better theme fit */}
-            <Text style={styles.appName}>Bottle Ping</Text> 
-            <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
+            <Text style={styles.bottleIcon}>🍾</Text>
+            <Text style={styles.appName}>Bottle Ping</Text>
+            <ActivityIndicator size="large" color="#10b981" style={styles.loader} />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    avatar:{
-        width: 80,
-        height: 80,
-        marginBottom: 10,
-        borderRadius: 40,
-    },
-    gradient: {
-        flex: 1,
-    },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#f9fafb',
         padding: 20,
     },
-    iconContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    tree: {
-        fontSize: 70,
-        marginRight: -10,
-    },
-    bottle: {
-        fontSize: 70,
-    },
-    // Added title style for the emoji/title text
-    title: {
-        fontSize: 70,
-        marginBottom: 8,
-        textAlign: 'center',
+    bottleIcon: {
+        fontSize: 80,
+        marginBottom: 10,
     },
     appName: {
-        fontSize: 36,
+        fontSize: 32,
         fontWeight: 'bold',
-        color: '#047857',
-        marginBottom: 8,
-        letterSpacing: 0.5,
-    },
-    tagline: {
-        fontSize: 14,
-        color: '#0891b2',
-        fontWeight: '500',
+        color: '#10b981',
         marginBottom: 40,
     },
-    loaderContainer: {
-        marginTop: 20,
-        padding: 15,
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        borderRadius: 50,
-    },
     loader: {
-        marginTop: 24,
+        marginTop: 20,
     },
 });
