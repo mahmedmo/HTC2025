@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -8,12 +8,14 @@ import BackButton from '../../components/BackButton';
 import { apiService } from '../../../services/api';
 import { sessionService } from '../../../services/session';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MyPinsScreen()
 {
     const router = useRouter();
     const [pins, setPins] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dropdownVisible, setDropdownVisible] = useState(false);
 
     useFocusEffect(
         useCallback(() =>
@@ -107,9 +109,83 @@ export default function MyPinsScreen()
         return `${days} day${days > 1 ? 's' : ''} ago`;
     };
 
+    const handleLogout = async () =>
+        {
+            Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Logout',
+                        style: 'destructive',
+                        onPress: async () =>
+                        {
+                            await sessionService.clearSession();
+                            router.replace('/pages/login');
+                        },
+                    },
+                ]
+            );
+        };
+
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <BackButton  mode='arrow' />
+            <View style={styles.topBar}>
+                <BackButton mode='arrow' />
+                
+                <TouchableOpacity 
+                    style={styles.profileButton}
+                    onPress={() => setDropdownVisible(!dropdownVisible)}
+                >
+                    <Ionicons name="person-circle" size={40} color="#10b981" />
+                </TouchableOpacity>
+
+            </View>
+
+            {dropdownVisible && (
+                <><TouchableOpacity
+                    style={styles.dropdownOverlay}
+                    onPress={() => setDropdownVisible(false)}
+                    activeOpacity={1} /><View style={styles.dropdown}>
+                        <TouchableOpacity
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                                setDropdownVisible(false);
+                                router.push('/pages/profile');
+                            } }
+                        >
+                            <Ionicons name="person-outline" size={20} color="#374151" />
+                            <Text style={styles.dropdownText}>Your Profile</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                                setDropdownVisible(false);
+                                router.push('/pages/leaderboard');
+                            } }
+                        >
+                            <Ionicons name="trophy-outline" size={20} color="#374151" />
+                            <Text style={styles.dropdownText}>Leaderboard</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                                setDropdownVisible(false);
+                                router.push('/pages/login');
+                            } }
+                        >
+                            <Ionicons name="power-outline" size={20} color="#374151" />
+                            <Text style={styles.dropdownText} onPress={handleLogout}>Log Out</Text>
+                        </TouchableOpacity>
+                    </View></>
+            )}
+
             <Text style={styles.title}>My Pins</Text>
 
             {loading ? (
@@ -130,7 +206,9 @@ export default function MyPinsScreen()
                             <View style={styles.header}>
                                 <View>
                                     <Text style={styles.count}>Bottle</Text>
-                                    <Text style={styles.count}>{pin.bottle_count ?? 12}</Text>
+                                    <Text style={styles.count}>
+                                        {pin.bottle_count ?? Math.floor(Math.random() * 10) + 1} bottles pinged {Math.floor(Math.random() * 25)} hrs ago
+                                    </Text>
                                 </View>:
                                 <View style={[styles.badge, { backgroundColor: '#10b981' }]}>
                                     <Text style={styles.badgeText}>ACTIVE</Text>
@@ -174,6 +252,57 @@ export default function MyPinsScreen()
 }
 
 const styles = StyleSheet.create({
+    dropdownOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 999,    
+    },
+    topBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 10,
+    },
+    profileButton: {
+        padding: 5,
+        top: 5,
+        right: -320,
+    },
+    dropdown: {
+        position: 'absolute',
+        top: 70,
+        right: 20,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 8,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        zIndex: 1000,
+        minWidth: 200,
+    },
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+    },
+    dropdownText: {
+        marginLeft: 6,
+        fontSize: 16,
+        color: '#374151',
+        fontWeight: '500',
+    },
     cardMap: {
         width: '100%',
         height: 150,
