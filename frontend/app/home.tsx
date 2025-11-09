@@ -69,8 +69,6 @@ export default function HomeScreen()
                 style={styles.avatar}
             />
             <Text style={styles.appName}>Bottles Ping</Text>
-            {userName && <Text style={styles.welcomeText}>Welcome, {userName}!</Text>}
-            <Text style={styles.subtitle}>Select your role</Text>
 
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
