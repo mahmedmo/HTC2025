@@ -215,11 +215,20 @@ def add_user():
                 """
                 INSERT INTO users (Name, Email, Password, IP)
                 VALUES (%s, %s, %s, %s)
+                RETURNING UserID
                 """,
                 (name, email, password, ip)
             )
+            user_id = cur.fetchone()[0]
             conn.commit()
-        return jsonify({"message": "User added"}), 201
+        return jsonify({
+            "message": "User added",
+            "user": {
+                "userId": user_id,
+                "name": name,
+                "email": email
+            }
+        }), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -234,13 +243,20 @@ def check_user():
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT * FROM users WHERE Email = %s AND Password = %s
+                SELECT UserID, Name, Email FROM users WHERE Email = %s AND Password = %s
                 """,
                 (email, password)
             )
             user = cur.fetchone()
             if user:
-                return jsonify({"message": "User authenticated"}), 200
+                return jsonify({
+                    "message": "User authenticated",
+                    "user": {
+                        "userId": user[0],
+                        "name": user[1],
+                        "email": user[2]
+                    }
+                }), 200
             else:
                 return jsonify({"error": "Invalid credentials"}), 401
     except Exception as e:
@@ -249,5 +265,5 @@ def check_user():
 print("✅ Auth routes registered successfully.")
 
 if __name__ == "__main__":
-    print("🔥 Flask app running on http://127.0.0.1:5000 ...")
-    app.run(debug=False, threaded=True, host="0.0.0.0", port=5000)
+    print("🔥 Flask app running on http://127.0.0.1:5001 ...")
+    app.run(debug=False, threaded=True, host="0.0.0.0", port=5001)

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import { sessionService } from '../services/session';
 
 export default function SplashScreen()
 {
@@ -9,12 +10,23 @@ export default function SplashScreen()
 
     useEffect(() =>
     {
-        const timeout = setTimeout(() =>
+        const checkAuth = async () =>
         {
-            router.replace('/home');
-        }, 2000);
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-        return () => clearTimeout(timeout);
+            const isAuthenticated = await sessionService.isAuthenticated();
+
+            if (isAuthenticated)
+            {
+                router.replace('/home');
+            }
+            else
+            {
+                router.replace('/pages/login');
+            }
+        };
+
+        checkAuth();
     }, []);
 
     return (

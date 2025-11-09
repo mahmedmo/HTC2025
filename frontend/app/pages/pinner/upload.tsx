@@ -1,15 +1,18 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import BackButton from '../../components/BackButton';
+import { apiService } from '../../../services/api';
 
 export default function UploadScreen()
 {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [image, setImage] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const takePhoto = async () =>
     {
@@ -33,18 +36,75 @@ export default function UploadScreen()
         }
     };
 
-    const usePhoto = () =>
+    const retakePhoto = async () =>
+    {
+        await takePhoto();
+    };
+
+    const usePhoto = async () =>
     {
         if (!image)
         {
             return;
         }
-        router.back();
+
+        setIsUploading(true);
+
+        try
+        {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+
+            if (status !== 'granted')
+            {
+                Alert.alert('Permission needed', 'Location access is required to upload pins');
+                setIsUploading(false);
+                return;
+            }
+
+            const currentLocation = await Location.getCurrentPositionAsync({});
+
+            const result = await apiService.uploadPin(
+                image,
+                {
+                    lat: currentLocation.coords.latitude,
+                    lng: currentLocation.coords.longitude,
+                },
+                undefined
+            );
+
+            setIsUploading(false);
+
+            if (result.success)
+            {
+                Alert.alert(
+                    'Success!',
+                    'Your pin has been uploaded successfully.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => router.back(),
+                        },
+                    ]
+                );
+            }
+            else
+            {
+                Alert.alert('Upload Failed', result.error || 'Failed to upload pin');
+            }
+        }
+        catch (error)
+        {
+            setIsUploading(false);
+            Alert.alert(
+                'Error',
+                error instanceof Error ? error.message : 'An error occurred while uploading'
+            );
+        }
     };
 
     return (
         <View style={styles.container}>
-            <BackButton />
+            <BackButton mode="arrow" />
 
             {!image ? (
                 <View style={styles.placeholderContainer}>
@@ -56,7 +116,7 @@ export default function UploadScreen()
                     <Image source={{ uri: image }} style={styles.image} />
                     <TouchableOpacity
                         style={styles.retakeButton}
-                        onPress={() => setImage(null)}
+                        onPress={retakePhoto}
                     >
                         <Text style={styles.retakeText}>Retake</Text>
                     </TouchableOpacity>
@@ -65,12 +125,23 @@ export default function UploadScreen()
 
             <View style={[styles.buttonContainer, { paddingBottom: 20 + insets.bottom }]}>
                 {!image ? (
-                    <TouchableOpacity style={styles.button} onPress={takePhoto}>
+                    <TouchableOpacity style={styles.button} onPress={takePhoto} disabled={isUploading}>
                         <Text style={styles.buttonText}>Take Photo</Text>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity style={styles.button} onPress={usePhoto}>
-                        <Text style={styles.buttonText}>Use Photo</Text>
+                    <TouchableOpacity
+                        style={[styles.button, isUploading && styles.buttonDisabled]}
+                        onPress={usePhoto}
+                        disabled={isUploading}
+                    >
+                        {isUploading ? (
+                            <View style={styles.uploadingContainer}>
+                                <ActivityIndicator color="#fff" />
+                                <Text style={styles.buttonText}>Uploading...</Text>
+                            </View>
+                        ) : (
+                            <Text style={styles.buttonText}>Use Photo</Text>
+                        )}
                     </TouchableOpacity>
                 )}
             </View>
@@ -132,5 +203,13 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: '600',
+    },
+    buttonDisabled: {
+        backgroundColor: '#9ca3af',
+    },
+    uploadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
 });

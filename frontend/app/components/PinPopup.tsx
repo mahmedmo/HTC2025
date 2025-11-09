@@ -116,13 +116,6 @@ export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupPr
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
-          style={styles.popupWrapper}
-          onPress={(e) => {
-            // Prevent backdrop press from propagating
-            e.stopPropagation();
-          }}
-        >
           <Animated.View
             style={[
               styles.container,
@@ -187,7 +180,6 @@ export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupPr
             </TouchableOpacity>
           </View>
         </Animated.View>
-        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -197,9 +189,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-  },
-  popupWrapper: {
-    backgroundColor: '#FFFFFF',
   },
   container: {
     backgroundColor: '#FFFFFF',
