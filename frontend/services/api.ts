@@ -7,6 +7,7 @@ interface ILocationData
 {
     lat: number;
     lng: number;
+    submission_id?: string;
 }
 
 interface IUploadResponse

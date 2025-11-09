@@ -46,7 +46,7 @@ export default function BackButton({ mode = 'back', onCancel, onPress }: BackBut
 
     return (
         <TouchableOpacity
-            style={[styles.button, { top: 26 + insets.top }, mode === 'cancel' && styles.cancelButton]}
+            style={[styles.button, { top: 20 + insets.top }, mode === 'cancel' && styles.cancelButton]}
             onPress={handlePress}
         >
             {mode === 'cancel' ? (

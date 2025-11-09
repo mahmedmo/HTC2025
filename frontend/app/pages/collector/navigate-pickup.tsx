@@ -45,6 +45,52 @@ export default function NavigatePickupScreen()
     const [travelMode, setTravelMode] = useState<TravelMode>('walking');
     const [navigationMode, setNavigationMode] = useState<boolean>(false);
 
+    const [region, setRegion] = useState<Region>({
+        latitude: 0,
+        longitude: 0,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+    });
+
+    const zoomIn = () => {
+        if (userLocation) {
+            const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: region.latitudeDelta / 2,
+                longitudeDelta: region.longitudeDelta / 2,
+            };
+            setRegion(newRegion);
+            mapRef.current?.animateToRegion(newRegion, 300);
+        }
+    };
+
+    const zoomOut = () => {
+        if (userLocation) {
+            const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: region.latitudeDelta * 2,
+                longitudeDelta: region.longitudeDelta * 2,
+            };
+            setRegion(newRegion);
+            mapRef.current?.animateToRegion(newRegion, 300);
+        }
+    };
+
+    const recenterMap = () => {
+        if (userLocation && mapRef.current) {
+            const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+            };
+            setRegion(newRegion);
+            mapRef.current.animateToRegion(newRegion, 300);
+        }
+    };
+
     const pinLocation = {
         latitude: parseFloat(params.latitude as string),
         longitude: parseFloat(params.longitude as string),
@@ -402,6 +448,8 @@ export default function NavigatePickupScreen()
                 }}
                 showsUserLocation
                 showsMyLocationButton={false}
+                showsCompass={false}
+                toolbarEnabled={false}
             >
                 {routeCoordinates.length > 0 && (
                     <Polyline
@@ -428,7 +476,6 @@ export default function NavigatePickupScreen()
                     </View>
                 </Marker>
             </MapView>
-
             <BackButton mode="cancel" onCancel={() => router.replace('/pages/collector/map')} />
 
             {timeRemaining > 0 && (
@@ -438,7 +485,7 @@ export default function NavigatePickupScreen()
             )}
 
             {!navigationMode && (
-                <View style={[styles.travelModeContainer, { top: timeRemaining > 0 ? 90 + insets.top : 20 + insets.top }]}>
+                <View style={[styles.travelModeContainer, { bottom: 200 }]}>
                     <TouchableOpacity
                         style={[styles.travelModeButton, travelMode === 'walking' && styles.travelModeButtonActive]}
                         onPress={() => changeTravelMode('walking')}
@@ -456,6 +503,25 @@ export default function NavigatePickupScreen()
                         onPress={() => changeTravelMode('driving')}
                     >
                         <FontAwesome5 name="car" size={20} color={travelMode === 'driving' ? '#3b82f6' : '#6b7280'} />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                        style={styles.zoomButton}
+                        onPress={zoomIn}
+                    >
+                        <Text style={styles.zoomButtonText}>+</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.zoomButton}
+                        onPress={zoomOut}
+                    >
+                        <Text style={styles.zoomButtonText}>−</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.zoomButton, styles.recenterButton]}
+                        onPress={recenterMap}
+                    >
+                        <Text style={styles.recenterButtonText}>⌖</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -663,8 +729,8 @@ const styles = StyleSheet.create({
         top: 20,
         right: 20,
         backgroundColor: '#FEF3C7',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
         borderRadius: 12,
         borderWidth: 2,
         borderColor: '#F59E0B',
@@ -677,15 +743,17 @@ const styles = StyleSheet.create({
     timerText: {
         fontSize: 16,
         color: '#92400E',
-        fontWeight: '700',
+        fontWeight: '600',
         textAlign: 'center',
         fontVariant: ['tabular-nums'],
     },
     travelModeContainer: {
         position: 'absolute',
+        left: 20,
         right: 20,
-        flexDirection: 'column',
-        gap: 8,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 12,
     },
     travelModeButton: {
         backgroundColor: '#FFFFFF',
@@ -746,5 +814,34 @@ const styles = StyleSheet.create({
     instructionSubtext: {
         fontSize: 13,
         color: '#9ca3af',
+    },
+    zoomButton: {
+        width: 48,
+        height: 48,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 5,
+        borderWidth: 2,
+        borderColor: '#e5e7eb',
+    },
+    zoomButtonText: {
+        fontSize: 24,
+        color: '#6b7280',
+        fontWeight: 'bold',
+    },
+    recenterButton: {
+        backgroundColor: '#FFFFFF',
+        borderColor: '#e5e7eb',
+    },
+    recenterButtonText: {
+        fontSize: 20,
+        color: '#6b7280',
+        fontWeight: 'bold',
     },
 });

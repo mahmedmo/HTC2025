@@ -20,6 +20,7 @@ export interface IPin
     claimExpiry?: number;
     createdAt: number;
     completedAt?: number;
+    submissionId?: string;
 }
 
 export interface IUser
