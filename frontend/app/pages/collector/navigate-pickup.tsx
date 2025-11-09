@@ -44,6 +44,51 @@ export default function NavigatePickupScreen()
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
     const [travelMode, setTravelMode] = useState<TravelMode>('driving');
     const [navigationMode, setNavigationMode] = useState<boolean>(false);
+    const [region, setRegion] = useState<Region>({
+        latitude: 0,
+        longitude: 0,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+    });
+
+    const zoomIn = () => {
+        if (userLocation) {
+            const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: region.latitudeDelta / 2,
+                longitudeDelta: region.longitudeDelta / 2,
+            };
+            setRegion(newRegion);
+            mapRef.current?.animateToRegion(newRegion, 300);
+        }
+    };
+
+    const zoomOut = () => {
+        if (userLocation) {
+            const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: region.latitudeDelta * 2,
+                longitudeDelta: region.longitudeDelta * 2,
+            };
+            setRegion(newRegion);
+            mapRef.current?.animateToRegion(newRegion, 300);
+        }
+    };
+
+    const recenterMap = () => {
+        if (userLocation && mapRef.current) {
+            const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+            };
+            setRegion(newRegion);
+            mapRef.current.animateToRegion(newRegion, 300);
+        }
+    };
 
     const pinLocation = {
         latitude: parseFloat(params.latitude as string),
@@ -356,7 +401,7 @@ export default function NavigatePickupScreen()
 
         Alert.alert(
             'Bottles Collected!',
-            `You've successfully collected ${bottleCount} bottles. Great work!`,
+            `Wow! ${bottleCount} bottles collected! You're a recycling superstar! 🌟`,
             [
                 {
                     text: 'Done',
@@ -428,6 +473,19 @@ export default function NavigatePickupScreen()
                     </View>
                 </Marker>
             </MapView>
+
+            {/* Zoom controls */}
+            <View style={styles.zoomButtonsContainer}>
+                <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
+                    <Text style={styles.zoomButtonText}>+</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
+                    <Text style={styles.zoomButtonText}>-</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.zoomButton, styles.recenterButton]} onPress={recenterMap}>
+                    <Text style={styles.recenterButtonText}>⌖</Text>
+                </TouchableOpacity>
+            </View>
 
             <BackButton mode="cancel" onCancel={() => router.replace('/pages/collector/map')} />
 
@@ -574,6 +632,40 @@ const styles = StyleSheet.create({
     pinIcon: {
         fontSize: 20,
     },
+    zoomButtonsContainer: {
+        position: 'absolute',
+        right: 16,
+        bottom: 180,
+        backgroundColor: 'transparent',
+    },
+    zoomButton: {
+        width: 40,
+        height: 40,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    zoomButtonText: {
+        fontSize: 24,
+        color: '#10b981',
+        fontWeight: 'bold',
+    },
+    recenterButton: {
+        backgroundColor: '#10b981',
+    },
+    recenterButtonText: {
+        fontSize: 24,
+        color: '#ffffff',
+        fontWeight: 'bold',
+    },
+
     markerText: {
         position: 'absolute',
         top: -8,

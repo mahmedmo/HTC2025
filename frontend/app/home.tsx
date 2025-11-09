@@ -70,7 +70,7 @@ export default function HomeScreen()
             <Text style={styles.title}>🍾</Text>
             <Text style={styles.appName}>Bottles Ping</Text>
             {userName && <Text style={styles.welcomeText}>Welcome, {userName}!</Text>}
-            <Text style={styles.subtitle}>Select your role</Text>
+            <Text style={styles.subtitle}>Ready to make a difference?</Text>
 
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
@@ -105,18 +105,12 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'transparent',
-        padding: 20,
-    },
+    
     logoutButton: {
         position: 'absolute',
         top: 50,
         right: 20,
-        backgroundColor: '#ef4444',
+        backgroundColor: '#3b82f6',
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 8,
@@ -152,11 +146,7 @@ const styles = StyleSheet.create({
         width: '100%',
         gap: 20,
     },
-    roleButton: {
-        padding: 20,
-        borderRadius: 30, 
-        alignItems: 'center',
-    },
+    
     pinnerButton: {
         backgroundColor: '#10b981',
     },
@@ -182,4 +172,22 @@ const styles = StyleSheet.create({
         color: '#fff',
         opacity: 0.9,
     },
+
+    container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 20,
+},
+    roleButton: {
+    padding: 30,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+},
 });

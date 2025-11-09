@@ -54,8 +54,8 @@ export default function AcceptPinScreen()
             <BackButton />
             <View style={styles.card}>
                 <Text style={styles.emoji}>~</Text>
-                <Text style={styles.title}>Pin Accepted!</Text>
-                <Text style={styles.subtitle}>You have 30 minutes to collect</Text>
+                <Text style={styles.title}>🎉 Pin Accepted! 🎉</Text>
+                <Text style={styles.subtitle}>You have 30 minutes to collect!</Text>
 
                 <View style={styles.timerContainer}>
                     <Text style={styles.timerLabel}>Time Remaining</Text>

@@ -57,6 +57,54 @@ export default function CollectorMapScreen()
         }
     };
 
+    // Initialize region with current location
+    const [region, setRegion] = useState({
+        latitude: location?.coords.latitude || 0,
+        longitude: location?.coords.longitude || 0,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+    });
+
+// Add zoom buttons to the UI
+    const zoomIn = () => {
+        if (location) {
+            const newRegion = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                latitudeDelta: region.latitudeDelta / 2,
+                longitudeDelta: region.longitudeDelta / 2,
+            };
+            setRegion(newRegion);
+            mapRef.current?.animateToRegion(newRegion, 300);
+        }
+    };
+
+    const zoomOut = () => {
+        if (location) {
+            const newRegion = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                latitudeDelta: region.latitudeDelta * 2,
+                longitudeDelta: region.longitudeDelta * 2,
+            };
+            setRegion(newRegion);
+            mapRef.current?.animateToRegion(newRegion, 300);
+        }
+    };
+
+    const recenterMap = () => {
+        if (location && mapRef.current) {
+            const newRegion = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+            };
+            setRegion(newRegion);
+            mapRef.current.animateToRegion(newRegion, 300);
+        }
+};
+
     const fetchPins = async () =>
     {
         const result = await apiService.getActiveLocations();
@@ -308,7 +356,11 @@ export default function CollectorMapScreen()
                 }}
                 showsUserLocation
                 showsMyLocationButton
+                zoomEnabled={true}
+                zoomControlEnabled={true} 
             >
+                
+
                 {pins.map(pin => {
                     const isSelected = selectedPin?.pinId === pin.pinId;
 
@@ -365,6 +417,19 @@ export default function CollectorMapScreen()
                 })}
             </MapView>
 
+            {/* Zoom controls */}
+            <View style={styles.zoomButtonsContainer}>
+                <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
+                    <Text style={styles.zoomButtonText}>+</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
+                    <Text style={styles.zoomButtonText}>-</Text>
+                </TouchableOpacity>
+                    <TouchableOpacity style={[styles.zoomButton, styles.recenterButton]} onPress={recenterMap}>
+                        <Text style={styles.recenterButtonText}>⌖</Text>
+                </TouchableOpacity>
+            </View>
+
             <BackButton onPress={handleBackPress} />
 
             <TouchableOpacity
@@ -387,6 +452,39 @@ export default function CollectorMapScreen()
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    zoomButtonsContainer: {
+        position: 'absolute',
+        right: 16,
+        bottom: 180, // Moved up to be above the Find Closest Bottle button
+        backgroundColor: 'transparent',
+    },
+    zoomButton: {
+        width: 40,
+        height: 40,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    zoomButtonText: {
+        fontSize: 24,
+        color: '#10b981',
+        fontWeight: 'bold',
+    },
+    recenterButton: {
+        backgroundColor: '#10b981',
+    },
+    recenterButtonText: {
+        fontSize: 24,
+        color: '#ffffff',
+        fontWeight: 'bold',
     },
     loadingContainer: {
         flex: 1,
