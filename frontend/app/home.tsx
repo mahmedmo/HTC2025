@@ -4,55 +4,40 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { sessionService } from '../services/session';
 
-export default function HomeScreen()
-{
+export default function HomeScreen() {
     const router = useRouter();
     const [userName, setUserName] = useState<string>('');
 
-    useEffect(() =>
-    {
-        const loadUserSession = async () =>
-        {
+    useEffect(() => {
+        const loadUserSession = async () => {
             const session = await sessionService.getSession();
-            if (session)
-            {
+            if (session) {
                 setUserName(session.name);
             }
         };
-
         loadUserSession();
     }, []);
 
-    const selectRole = (role: 'pinner' | 'collector' | 'leaderboard') =>
-    {
-        if (role === 'pinner')
-        {
+    const selectRole = (role: 'pinner' | 'collector' | 'leaderboard') => {
+        if (role === 'pinner') {
             router.push('/pages/pinner/upload');
-        }
-        else if (role === 'leaderboard'){
+        } else if (role === 'leaderboard') {
             router.push('/pages/leaderboard');
-        }
-        else
-        {
+        } else {
             router.push('/pages/collector/map');
         }
     };
 
-    const handleLogout = async () =>
-    {
+    const handleLogout = async () => {
         Alert.alert(
             'Logout',
             'Are you sure you want to logout?',
             [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
+                { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Logout',
                     style: 'destructive',
-                    onPress: async () =>
-                    {
+                    onPress: async () => {
                         await sessionService.clearSession();
                         router.replace('/pages/login');
                     },
@@ -88,23 +73,20 @@ export default function HomeScreen()
                     <Text style={styles.roleTitle}>Collect</Text>
                     <Text style={styles.roleDescription}>Collect bottles</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.roleButton, styles.leaderboardButton]}
+                    onPress={() => selectRole('leaderboard')}
+                >
+                    <Text style={styles.roleTitle}>🏆 Leaderboard</Text>
+                    <Text style={styles.roleDescription}>See top recyclers</Text>
+                </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    avatar:{
-        width: 80,
-        height: 80,
-        marginBottom: 10,
-        borderRadius: 40,
-    },
-    backgroundImage: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-    },
     container: {
         flex: 1,
         justifyContent: 'center',
@@ -154,7 +136,7 @@ const styles = StyleSheet.create({
     },
     roleButton: {
         padding: 20,
-        borderRadius: 30, 
+        borderRadius: 30,
         alignItems: 'center',
     },
     pinnerButton: {
@@ -165,10 +147,6 @@ const styles = StyleSheet.create({
     },
     leaderboardButton: {
         backgroundColor: '#00CED1',
-    },
-    roleEmoji: {
-        fontSize: 48,
-        marginBottom: 10,
     },
     roleTitle: {
         fontSize: 30,
