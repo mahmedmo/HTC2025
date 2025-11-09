@@ -7,8 +7,8 @@ Built with **React Native (Expo)** for the frontend and **Flask + AWS ECS + RDS 
 ## Live Demo
 Since using the app requires api keys to google maps api you can't build locally without it.
 Hence, you can try it out on your phone (iOS has most support). Expo Go app MUST be installed on your device prior to copy and pasting the following link to safari (should redirect and build via expo go app)
-exp://fqphiwa-anonymous-8081.exp.direct
 
+exp://fqphiwa-anonymous-8081.exp.direct
 ## 🚀 Quick Start (Frontend)
 
 ### 1️⃣ Install Expo CLI
