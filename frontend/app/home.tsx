@@ -1,10 +1,27 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { sessionService } from '../services/session';
 
 export default function HomeScreen()
 {
     const router = useRouter();
+    const [userName, setUserName] = useState<string>('');
+
+    useEffect(() =>
+    {
+        const loadUserSession = async () =>
+        {
+            const session = await sessionService.getSession();
+            if (session)
+            {
+                setUserName(session.name);
+            }
+        };
+
+        loadUserSession();
+    }, []);
 
     const selectRole = (role: 'pinner' | 'collector') =>
     {
@@ -18,13 +35,39 @@ export default function HomeScreen()
         }
     };
 
+    const handleLogout = async () =>
+    {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () =>
+                    {
+                        await sessionService.clearSession();
+                        router.replace('/pages/login');
+                    },
+                },
+            ]
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <Image 
-                source={require('./pics/avatar.png')} 
-                style={styles.avatar}
-            />
-            <Text style={styles.appName}>Bottle Ping</Text>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.title}>🍾</Text>
+            <Text style={styles.appName}>Bottles Ping</Text>
+            {userName && <Text style={styles.welcomeText}>Welcome, {userName}!</Text>}
+            <Text style={styles.subtitle}>Select your role</Text>
 
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
@@ -80,16 +123,49 @@ const styles = StyleSheet.create({
         backgroundColor: '#ece3e3ff',
         padding: 20,
     },
+    logoutButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        backgroundColor: '#ef4444',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        zIndex: 1,
+    },
+    logoutButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+    },
     title: {
         fontSize: 80,
         marginBottom: 10,
     },
     appName: {
+<<<<<<< HEAD
         fontSize: 36,
         fontWeight: 'bold',
         color: '#047857',
         marginBottom: 50,
         letterSpacing: 0.5,
+=======
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#10b981',
+        marginBottom: 10,
+    },
+    welcomeText: {
+        fontSize: 18,
+        color: '#374151',
+        fontWeight: '600',
+        marginBottom: 20,
+    },
+    subtitle: {
+        fontSize: 18,
+        color: '#6b7280',
+        marginBottom: 30,
+>>>>>>> origin/master
     },
     buttonContainer: {
         width: '100%',

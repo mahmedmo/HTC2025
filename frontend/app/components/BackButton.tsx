@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 
 interface BackButtonProps {
-    mode?: 'back' | 'cancel';
+    mode?: 'back' | 'cancel' | 'arrow';
     onCancel?: () => void;
     onPress?: () => void;
 }
@@ -51,6 +51,8 @@ export default function BackButton({ mode = 'back', onCancel, onPress }: BackBut
         >
             {mode === 'cancel' ? (
                 <Text style={styles.cancelText}>✕ Cancel</Text>
+            ) : mode === 'arrow' ? (
+                <FontAwesome name="arrow-left" size={20} color="#10b981" />
             ) : (
                 <FontAwesome name="home" size={20} color="#10b981" />
             )}

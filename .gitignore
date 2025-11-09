@@ -9,7 +9,7 @@ __pycache__/
 *.iml
 *.sqlite3
 *.log
-.env
+backend/.env
 .vscode/
 *.egg-info/
 dist/

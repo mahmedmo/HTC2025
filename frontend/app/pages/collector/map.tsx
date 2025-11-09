@@ -1,27 +1,31 @@
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'expo-router';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { useRouter, useNavigation } from 'expo-router';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MAPS_CONFIG } from '../../../config/maps';
 import BackButton from '../../components/BackButton';
 import PinPopup from '../../components/PinPopup';
 import { IPin } from '../../../types';
+import { apiService } from '../../../services/api';
+import { CommonActions } from '@react-navigation/native';
 
 export default function CollectorMapScreen()
 {
     const router = useRouter();
+    const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
-    const [mockPins, setMockPins] = useState<IPin[]>([]);
+    const [pins, setPins] = useState<IPin[]>([]);
     const [selectedPin, setSelectedPin] = useState<IPin | null>(null);
     const [showPopup, setShowPopup] = useState(false);
-    const glowAnimations = useRef<Map<string, Animated.Value>>(new Map()).current;
+    const colorAnimations = useRef<Map<string, Animated.Value>>(new Map()).current;
 
     const handleBackPress = () =>
     {
+        // Navigate back to home with slide-from-left animation
         router.back();
     };
 
@@ -45,60 +49,7 @@ export default function CollectorMapScreen()
             const loc = await Location.getCurrentPositionAsync({});
             setLocation(loc);
 
-            // Calgary, AB coordinates for testing
-            const calgaryLat = 51.0447;
-            const calgaryLng = -114.0719;
-
-            const now = Date.now();
-            const claimExpiry = now + (30 * 60 * 1000); // 30 minutes from now
-
-            setMockPins([
-                {
-                    pinId: '1',
-                    creatorId: 'user123',
-                    location: {
-                        lat: calgaryLat + 0.002,
-                        lng: calgaryLng + 0.002,
-                        address: '123 Main St, Calgary, AB',
-                    },
-                    bottleCount: 24,
-                    estimatedValue: 2.40,
-                    imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400',
-                    status: 'available' as const,
-                    claimExpiry,
-                    createdAt: now - (2 * 60 * 60 * 1000), // 2 hours ago
-                },
-                {
-                    pinId: '2',
-                    creatorId: 'user456',
-                    location: {
-                        lat: calgaryLat - 0.003,
-                        lng: calgaryLng + 0.001,
-                        address: '456 Oak Ave, Calgary, AB',
-                    },
-                    bottleCount: 12,
-                    estimatedValue: 1.20,
-                    imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400',
-                    status: 'available' as const,
-                    claimExpiry,
-                    createdAt: now - (1 * 60 * 60 * 1000), // 1 hour ago
-                },
-                {
-                    pinId: '3',
-                    creatorId: 'user789',
-                    location: {
-                        lat: calgaryLat + 0.001,
-                        lng: calgaryLng - 0.003,
-                        address: '789 Pine Rd, Calgary, AB',
-                    },
-                    bottleCount: 18,
-                    estimatedValue: 1.80,
-                    imageUrl: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=400',
-                    status: 'available' as const,
-                    claimExpiry,
-                    createdAt: now - (30 * 60 * 1000), // 30 minutes ago
-                },
-            ]);
+            await fetchPins();
         }
         catch (error)
         {
@@ -106,30 +57,99 @@ export default function CollectorMapScreen()
         }
     };
 
+    const fetchPins = async () =>
+    {
+        const result = await apiService.getActiveLocations();
+		console.log("THE LOCATION RESULT IS: " + JSON.stringify(result));
+        if (result.success && result.data)
+        {
+
+            const now = Date.now();
+            const claimExpiry = now + (30 * 60 * 1000);
+
+            let mappedPins: IPin[] = result.data.locations.map((loc, index) => ({
+                pinId: `pin-${index}`,
+                creatorId: 'unknown',
+                location: {
+                    lat: loc.lat,
+                    lng: loc.lng,
+                },
+                bottleCount: 12,
+                estimatedValue: 1.20,
+                status: 'available' as const,
+                claimExpiry,
+                createdAt: now - (1 * 60 * 60 * 1000),
+            }));
+
+            // Separate overlapping pins
+            mappedPins = separateOverlappingPins(mappedPins);
+
+            setPins(mappedPins);
+        }
+        else
+        {
+            Alert.alert('Error', result.error || 'Failed to load pins');
+        }
+    };
+
+    const separateOverlappingPins = (pins: IPin[]): IPin[] =>
+    {
+        const OVERLAP_THRESHOLD = 0.0001; // ~11 meters
+        const SEPARATION_OFFSET = 0.00008; // ~9 meters offset
+        const adjustedPins = [...pins];
+
+        for (let i = 0; i < adjustedPins.length; i++)
+        {
+            for (let j = i + 1; j < adjustedPins.length; j++)
+            {
+                const pin1 = adjustedPins[i];
+                const pin2 = adjustedPins[j];
+
+                const latDiff = Math.abs(pin1.location.lat - pin2.location.lat);
+                const lngDiff = Math.abs(pin1.location.lng - pin2.location.lng);
+
+                // Check if pins are too close
+                if (latDiff < OVERLAP_THRESHOLD && lngDiff < OVERLAP_THRESHOLD)
+                {
+                    // Offset second pin slightly to the right and down
+                    adjustedPins[j] = {
+                        ...pin2,
+                        location: {
+                            lat: pin2.location.lat - SEPARATION_OFFSET,
+                            lng: pin2.location.lng + SEPARATION_OFFSET,
+                        },
+                    };
+                }
+            }
+        }
+
+        return adjustedPins;
+    };
+
     const handlePinPress = (pinId: string) =>
     {
-        const pin = mockPins.find(p => p.pinId === pinId);
+        const pin = pins.find(p => p.pinId === pinId);
         if (pin)
         {
-            // Fade out previous glow
-            if (selectedPin && glowAnimations.has(selectedPin.pinId)) {
-                Animated.timing(glowAnimations.get(selectedPin.pinId)!, {
+            // Fade out previous selection
+            if (selectedPin && colorAnimations.has(selectedPin.pinId)) {
+                Animated.timing(colorAnimations.get(selectedPin.pinId)!, {
                     toValue: 0,
                     duration: 200,
-                    useNativeDriver: true,
+                    useNativeDriver: false,
                 }).start();
             }
 
             // Initialize animation value if it doesn't exist
-            if (!glowAnimations.has(pinId)) {
-                glowAnimations.set(pinId, new Animated.Value(0));
+            if (!colorAnimations.has(pinId)) {
+                colorAnimations.set(pinId, new Animated.Value(0));
             }
 
-            // Fade in new glow
-            Animated.timing(glowAnimations.get(pinId)!, {
+            // Fade in new selection
+            Animated.timing(colorAnimations.get(pinId)!, {
                 toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
+                duration: 200,
+                useNativeDriver: false,
             }).start();
 
             setSelectedPin(pin);
@@ -150,12 +170,12 @@ export default function CollectorMapScreen()
 
     const handleClosePopup = () =>
     {
-        // Fade out the glow when closing popup
-        if (selectedPin && glowAnimations.has(selectedPin.pinId)) {
-            Animated.timing(glowAnimations.get(selectedPin.pinId)!, {
+        // Fade out selection color
+        if (selectedPin && colorAnimations.has(selectedPin.pinId)) {
+            Animated.timing(colorAnimations.get(selectedPin.pinId)!, {
                 toValue: 0,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: false,
             }).start();
         }
 
@@ -165,15 +185,6 @@ export default function CollectorMapScreen()
 
     const handleAcceptPin = (pin: IPin) =>
     {
-        // Fade out the glow when accepting
-        if (glowAnimations.has(pin.pinId)) {
-            Animated.timing(glowAnimations.get(pin.pinId)!, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }).start();
-        }
-
         setShowPopup(false);
         setSelectedPin(null);
 
@@ -191,9 +202,9 @@ export default function CollectorMapScreen()
     };
 
     const findClosestBottle = () => {
-        if (!location || mockPins.length === 0) return;
+        if (!location || pins.length === 0) return;
 
-        const pinsWithDistance = mockPins.map(pin => {
+        const pinsWithDistance = pins.map(pin => {
             const R = 6371e3;
             const φ1 = (location.coords.latitude * Math.PI) / 180;
             const φ2 = (pin.location.lat * Math.PI) / 180;
@@ -214,18 +225,18 @@ export default function CollectorMapScreen()
             current.distance < prev.distance ? current : prev
         );
 
-        // Fade out previous glow
-        if (selectedPin && glowAnimations.has(selectedPin.pinId)) {
-            Animated.timing(glowAnimations.get(selectedPin.pinId)!, {
+        // Fade out previous selection
+        if (selectedPin && colorAnimations.has(selectedPin.pinId)) {
+            Animated.timing(colorAnimations.get(selectedPin.pinId)!, {
                 toValue: 0,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: false,
             }).start();
         }
 
         // Initialize animation value if it doesn't exist
-        if (!glowAnimations.has(closest.pin.pinId)) {
-            glowAnimations.set(closest.pin.pinId, new Animated.Value(0));
+        if (!colorAnimations.has(closest.pin.pinId)) {
+            colorAnimations.set(closest.pin.pinId, new Animated.Value(0));
         }
 
         // Animate camera to closest pin
@@ -239,15 +250,15 @@ export default function CollectorMapScreen()
             }, 1000);
         }
 
-        // Show popup and fade in glow after camera animation starts
+        // Show popup and fade in selection after camera animation starts
         setTimeout(() => {
             setSelectedPin(closest.pin);
             setShowPopup(true);
 
-            Animated.timing(glowAnimations.get(closest.pin.pinId)!, {
+            Animated.timing(colorAnimations.get(closest.pin.pinId)!, {
                 toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
+                duration: 200,
+                useNativeDriver: false,
             }).start();
         }, 300);
     };
@@ -266,6 +277,7 @@ export default function CollectorMapScreen()
             <MapView
                 ref={mapRef}
                 style={styles.map}
+                provider={PROVIDER_GOOGLE}
                 initialRegion={{
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
@@ -275,19 +287,35 @@ export default function CollectorMapScreen()
                 showsUserLocation
                 showsMyLocationButton
             >
-                <UrlTile
-                    urlTemplate={`${MAPS_CONFIG.geoapify.tileUrl}${MAPS_CONFIG.geoapify.apiKey}`}
-                    maximumZ={19}
-                    tileSize={256}
-                />
-                {mockPins.map(pin => {
+                {pins.map(pin => {
                     const isSelected = selectedPin?.pinId === pin.pinId;
 
                     // Get or create animation value for this pin
-                    if (!glowAnimations.has(pin.pinId)) {
-                        glowAnimations.set(pin.pinId, new Animated.Value(0));
+                    if (!colorAnimations.has(pin.pinId)) {
+                        colorAnimations.set(pin.pinId, new Animated.Value(0));
                     }
-                    const glowOpacity = glowAnimations.get(pin.pinId)!;
+                    const colorProgress = colorAnimations.get(pin.pinId)!;
+
+                    // Interpolate colors
+                    const headColor = colorProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['#10b981', '#059669'], // Light green to dark green
+                    });
+
+                    const borderColor = colorProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['#fff', '#047857'], // White to darker green
+                    });
+
+                    const stemColor = colorProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['#10b981', '#059669'],
+                    });
+
+                    const pointColor = colorProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['#10b981', '#059669'],
+                    });
 
                     return (
                         <Marker
@@ -297,13 +325,18 @@ export default function CollectorMapScreen()
                                 longitude: pin.location.lng,
                             }}
                             onPress={() => handlePinPress(pin.pinId)}
+                            anchor={{ x: 0.5, y: 0.85 }}
+                            zIndex={isSelected ? 1000 : 1}
                         >
                             <View style={styles.markerContainer}>
-                                <Animated.View style={[styles.glowCircleOuter, { opacity: glowOpacity }]} />
-                                <Animated.View style={[styles.glowCircleMiddle, { opacity: glowOpacity }]} />
-                                <Animated.View style={[styles.glowCircleInner, { opacity: glowOpacity }]} />
-                                <Text style={styles.markerText}>{pin.bottleCount}</Text>
-                                <Text style={styles.markerIcon}>🍾</Text>
+                                <View style={styles.pinContainer}>
+                                    <Text style={styles.markerText}>{pin.bottleCount}</Text>
+                                    <Animated.View style={[styles.pinHead, { backgroundColor: headColor, borderColor: borderColor }]}>
+                                        <Text style={styles.pinIcon}>🍾</Text>
+                                    </Animated.View>
+                                    <Animated.View style={[styles.pinStem, { backgroundColor: stemColor }]} />
+                                    <Animated.View style={[styles.pinPoint, { borderTopColor: pointColor }]} />
+                                </View>
                             </View>
                         </Marker>
                     );
@@ -350,50 +383,63 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
     },
-    glowCircleOuter: {
-        position: 'absolute',
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: 'rgba(16, 185, 129, 0.15)',
-        top: -5,
-        left: -33,
-        zIndex: -3,
+    pinContainer: {
+        alignItems: 'center',
+        justifyContent: 'flex-start',
     },
-    glowCircleMiddle: {
-        position: 'absolute',
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        backgroundColor: 'rgba(16, 185, 129, 0.3)',
-        top: 10,
-        left: -18,
-        zIndex: -2,
+    pinHead: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#10b981',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 3,
+        borderColor: '#fff',
     },
-    glowCircleInner: {
-        position: 'absolute',
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: 'rgba(16, 185, 129, 0.5)',
-        top: 18,
-        left: -8,
-        zIndex: -1,
-        borderWidth: 2,
-        borderColor: '#10b981',
+    pinHeadSelected: {
+        backgroundColor: '#059669',
+        borderColor: '#047857',
     },
-    markerIcon: {
-        fontSize: 32,
+    pinStem: {
+        width: 3,
+        height: 15,
+        backgroundColor: '#10b981',
+    },
+    pinStemSelected: {
+        backgroundColor: '#059669',
+    },
+    pinPoint: {
+        width: 0,
+        height: 0,
+        backgroundColor: 'transparent',
+        borderStyle: 'solid',
+        borderLeftWidth: 6,
+        borderRightWidth: 6,
+        borderTopWidth: 9,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#10b981',
+    },
+    pinPointSelected: {
+        borderTopColor: '#059669',
+    },
+    pinIcon: {
+        fontSize: 20,
     },
     markerText: {
-        backgroundColor: '#10b981',
+        backgroundColor: '#ef4444',
         color: '#fff',
-        paddingHorizontal: 8,
+        paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 10,
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: '700',
-        marginBottom: 3,
+        minWidth: 20,
+        textAlign: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+        marginBottom: 4,
     },
     findClosestButton: {
         position: 'absolute',
