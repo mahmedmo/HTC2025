@@ -342,7 +342,7 @@ def add_user():
     name = data.get("name")
     email = data.get("email")
     password = data.get(""
-                        "")
+"")
     ip = request.remote_addr
 
     if not all([name, email, password]):
