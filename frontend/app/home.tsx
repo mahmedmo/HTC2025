@@ -27,7 +27,7 @@ export default function HomeScreen()
     {
         if (role === 'pinner')
         {
-            router.push('/pages/pinner/my-pins');
+            router.push('/pages/pinner/upload');
         }
         else if (role === 'leaderboard'){
             router.push('/pages/leaderboard');

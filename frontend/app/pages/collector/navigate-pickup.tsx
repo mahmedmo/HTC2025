@@ -42,7 +42,7 @@ export default function NavigatePickupScreen()
     const [duration, setDuration] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
-    const [travelMode, setTravelMode] = useState<TravelMode>('driving');
+    const [travelMode, setTravelMode] = useState<TravelMode>('walking');
     const [navigationMode, setNavigationMode] = useState<boolean>(false);
 
     const pinLocation = {
@@ -433,8 +433,7 @@ export default function NavigatePickupScreen()
 
             {timeRemaining > 0 && (
                 <View style={[styles.timerContainer, { top: 20 + insets.top }]}>
-                    <Text style={styles.timerLabel}>Time Left</Text>
-                    <Text style={styles.timerValue}>{formatTime(timeRemaining)}</Text>
+                    <Text style={styles.timerText}>Time Left: {formatTime(timeRemaining)}</Text>
                 </View>
             )}
 
@@ -675,15 +674,8 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 5,
     },
-    timerLabel: {
-        fontSize: 11,
-        color: '#92400E',
-        fontWeight: '600',
-        textAlign: 'center',
-        marginBottom: 2,
-    },
-    timerValue: {
-        fontSize: 20,
+    timerText: {
+        fontSize: 16,
         color: '#92400E',
         fontWeight: '700',
         textAlign: 'center',

@@ -183,7 +183,7 @@ export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupPr
               style={styles.goButton}
               onPress={() => onAccept(pin)}
             >
-              <Text style={styles.goButtonText}>GO</Text>
+              <Text style={styles.goButtonText}>Start Collecting</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

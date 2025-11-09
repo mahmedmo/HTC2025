@@ -65,7 +65,7 @@ export default function CollectorMapScreen()
         {
 
             const now = Date.now();
-            const claimExpiry = now + (30 * 60 * 1000);
+            const claimExpiry = now + (60 * 60 * 1000);
 
             let mappedPins: IPin[] = result.data.locations.map((loc, index) => ({
                 pinId: loc.submission_id || `pin-${index}`,
