@@ -33,10 +33,10 @@ CREATE TABLE IF NOT EXISTS users (
     Name TEXT,
     Email TEXT UNIQUE,
     Password TEXT,
-    IP TEXT
+    IP TEXT,
+    Points INTEGER DEFAULT 0
 );
 """)
-
 
 cur.execute("""
 CREATE TABLE IF NOT EXISTS submissions (
@@ -44,13 +44,81 @@ CREATE TABLE IF NOT EXISTS submissions (
     Location TEXT,
     UserID INTEGER REFERENCES users(UserID),
     Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    IsActive BOOLEAN DEFAULT TRUE
+    IsActive BOOLEAN DEFAULT TRUE,
+    IsOccupied BOOLEAN DEFAULT FALSE
 );
 """)
+
+
+
 
 conn.commit()
 
 app = Flask(__name__)
+
+@app.route("/leaderboard", methods=["GET"])
+def leaderboard():
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT Name, Email, Points
+                FROM users
+                ORDER BY Points DESC
+                LIMIT 10;
+            """)
+            rows = cur.fetchall()
+
+        # Format the response nicely
+        leaderboard = [
+            {"rank": i + 1, "name": r[0], "email": r[1], "points": r[2]}
+            for i, r in enumerate(rows)
+        ]
+
+        return jsonify({
+            "message": "Top 10 leaderboard fetched successfully",
+            "leaderboard": leaderboard
+        }), 200
+
+    except Exception as e:
+        print("⚠️ Leaderboard query error:", e)
+        return jsonify({"error": str(e)}), 500
+
+#todo: check if the person is witho X distance from location (maybe migth ruin demos tho)
+@app.route("/add_point", methods=["POST"])
+def add_point():
+    try:
+        data = request.get_json()
+        user_id = data.get("user_id")
+        location = data.get("location")
+
+        if not user_id or not location:
+            return jsonify({"error": "Missing user_id or location"}), 400
+
+        with conn.cursor() as cur:
+            # ✅ Update user points (+1)
+            cur.execute("""
+                UPDATE users
+                SET Points = COALESCE(Points, 0) + 1
+                WHERE UserID = %s;
+            """, (user_id,))
+
+            # ✅ Record the location in submissions (optional)
+            cur.execute("""
+                INSERT INTO submissions (SubmissionID, Location, UserID, IsActive)
+                VALUES (%s, %s, %s, %s);
+            """, (secrets.token_hex(16), location, user_id, True))
+
+            conn.commit()
+
+        print(f"✅ Added +1 point to user {user_id} for location {location}")
+        return jsonify({
+            "message": f"User {user_id} gained +1 point!",
+            "location": location
+        }), 200
+
+    except Exception as e:
+        print("❌ Error adding point:", e)
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/dbcheck")
 def dbcheck():
@@ -67,22 +135,91 @@ def hello():
 
 # POST 1: Receive array of locations
 
+
+# ✅ 1️⃣ Set IsActive = True or False manually
+@app.route("/set_active_status", methods=["POST"])
+def set_active_status():
+    try:
+        data = request.get_json()
+        submission_id = data.get("submission_id")
+        is_active = data.get("is_active")
+
+        if submission_id is None or is_active is None:
+            return jsonify({"error": "Missing submission_id or is_active"}), 400
+
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE submissions
+                SET IsActive = %s
+                WHERE SubmissionID = %s;
+            """, (is_active, submission_id))
+            conn.commit()
+
+        print(f"✅ Updated submission {submission_id} to active={is_active}")
+        return jsonify({
+            "message": f"Submission {submission_id} updated",
+            "is_active": is_active
+        }), 200
+
+    except Exception as e:
+        print("❌ Error updating IsActive:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+# ✅ 2️⃣ Toggle IsOccupied field (flip between True/False)
+@app.route("/toggle_occupied", methods=["POST"])
+def toggle_occupied():
+    try:
+        data = request.get_json()
+        submission_id = data.get("submission_id")
+
+        if not submission_id:
+            return jsonify({"error": "Missing submission_id"}), 400
+
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE submissions
+                SET IsOccupied = NOT COALESCE(IsOccupied, FALSE)
+                WHERE SubmissionID = %s
+                RETURNING IsOccupied;
+            """, (submission_id,))
+            new_state = cur.fetchone()
+            conn.commit()
+
+        if not new_state:
+            return jsonify({"error": "Submission not found"}), 404
+
+        print(f"🔄 Submission {submission_id} IsOccupied now = {new_state[0]}")
+        return jsonify({
+            "message": "Occupancy toggled successfully",
+            "submission_id": submission_id,
+            "is_occupied": new_state[0]
+        }), 200
+
+    except Exception as e:
+        print("❌ Error toggling IsOccupied:", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/locations", methods=["POST"])
 def handle_locations():
     cur = conn.cursor()
-    cur.execute("SELECT Location FROM submissions WHERE IsActive = TRUE;")
+    cur.execute("SELECT SubmissionID, Location FROM submissions WHERE IsActive = TRUE;")
     rows = cur.fetchall()
 
     locations = []
     for row in rows:
+        submission_id = row[0]
+        location_str = row[1]
+
         try:
-            lat_str, lng_str = row[0].split(",")
+            lat_str, lng_str = location_str.split(",")
             locations.append({
+                "submission_id": submission_id,
                 "lat": float(lat_str.strip()),
                 "lng": float(lng_str.strip())
             })
         except Exception as e:
-            print(f"⚠️ Error parsing location: {row[0]} — {e}")
+            print(f"⚠️ Error parsing location: {location_str} — {e}")
 
     return jsonify({
         "message": "Active locations fetched",
@@ -203,7 +340,8 @@ def add_user():
     data = request.get_json()
     name = data.get("name")
     email = data.get("email")
-    password = data.get("password")
+    password = data.get(""
+                        "")
     ip = request.remote_addr
 
     if not all([name, email, password]):
