@@ -10,6 +10,7 @@ export interface ILocation
 export interface IPin
 {
     pinId: string;
+    submissionId?: string;
     creatorId: string;
     collectorId?: string;
     location: ILocation;
