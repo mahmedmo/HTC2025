@@ -1,14 +1,16 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useRef } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { MAPS_CONFIG } from '../../../config/maps';
+import { MAPS_CONFIG, darkMapStyle } from '../../../config/maps';
 import { getRoute, TravelMode } from '../../../services/routing';
 import BackButton from '../../components/BackButton';
 import { apiService } from '../../../services/api';
+import { sessionService } from '../../../services/session';
+import AlertModal from '../../components/AlertModal';
 
 interface RoutePoint
 {
@@ -44,6 +46,18 @@ export default function NavigatePickupScreen()
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
     const [travelMode, setTravelMode] = useState<TravelMode>('walking');
     const [navigationMode, setNavigationMode] = useState<boolean>(false);
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        buttons: Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }>;
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        buttons: [{ text: 'OK', style: 'default' }],
+    });
 
     const [region, setRegion] = useState<Region>({
         latitude: 0,
@@ -98,9 +112,16 @@ export default function NavigatePickupScreen()
 
     const bottleCount = parseInt(params.bottleCount as string);
 
+    const loadMapMode = async () =>
+    {
+        const savedMode = await sessionService.getMapMode();
+        setIsDarkMode(savedMode);
+    };
+
     useEffect(() =>
     {
         setupNavigation();
+        loadMapMode();
         const locationSubscription = subscribeToLocation();
         const headingSubscription = subscribeToHeading();
 
@@ -124,8 +145,16 @@ export default function NavigatePickupScreen()
                     if (prev <= 0)
                     {
                         clearInterval(timerInterval);
-                        Alert.alert('Time Expired', 'Your claim on this pin has expired.');
-                        router.back();
+                        setAlertConfig({
+                            visible: true,
+                            title: 'Time Expired',
+                            message: 'Your claim on this pin has expired.',
+                            buttons: [{ 
+                                text: 'OK', 
+                                style: 'default',
+                                onPress: () => router.back()
+                            }],
+                        });
                         return 0;
                     }
                     return prev - 1;
@@ -164,7 +193,12 @@ export default function NavigatePickupScreen()
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted')
             {
-                Alert.alert('Permission needed', 'Location access is required for navigation');
+                setAlertConfig({
+                    visible: true,
+                    title: 'Permission needed',
+                    message: 'Location access is required for navigation',
+                    buttons: [{ text: 'OK', style: 'default' }],
+                });
                 return;
             }
 
@@ -204,7 +238,12 @@ export default function NavigatePickupScreen()
         catch (error)
         {
             console.error('Navigation setup error:', error);
-            Alert.alert('Error', 'Unable to setup navigation');
+            setAlertConfig({
+                visible: true,
+                title: 'Error',
+                message: 'Unable to setup navigation',
+                buttons: [{ text: 'OK', style: 'default' }],
+            });
             setLoading(false);
         }
     };
@@ -400,18 +439,16 @@ export default function NavigatePickupScreen()
             }
         }
 
-        Alert.alert(
-            'Bottles Collected!',
-            `You've successfully collected ${bottleCount} bottles. Great work!`,
-            [
-                {
-                    text: 'Done',
-                    onPress: () => {
-                        router.replace('/pages/collector/map');
-                    },
-                },
-            ]
-        );
+        setAlertConfig({
+            visible: true,
+            title: 'Bottles Collected!',
+            message: `You've successfully collected ${bottleCount} bottles. Great work!`,
+            buttons: [{ 
+                text: 'Done', 
+                style: 'default',
+                onPress: () => router.replace('/pages/collector/map')
+            }],
+        });
     };
 
     const formatDistance = (meters: number): string =>
@@ -421,6 +458,28 @@ export default function NavigatePickupScreen()
             return `${Math.round(meters)}m`;
         }
         return `${(meters / 1000).toFixed(1)}km`;
+    };
+
+    const handleCancelPress = () => {
+        setAlertConfig({
+            visible: true,
+            title: 'Cancel Pickup?',
+            message: 'Are you sure you want to cancel this pickup? You will lose your claim on this pin.',
+            buttons: [
+                { text: 'No, Continue', style: 'cancel' },
+                { 
+                    text: 'Yes, Cancel', 
+                    style: 'destructive',
+                    onPress: () => router.replace('/pages/collector/map')
+                }
+            ],
+        });
+    };
+
+    const toggleMapMode = () => {
+        const newMode = !isDarkMode;
+        setIsDarkMode(newMode);
+        sessionService.saveMapMode(newMode);
     };
 
     const currentStep = navigationSteps[currentStepIndex];
@@ -440,6 +499,7 @@ export default function NavigatePickupScreen()
                 ref={mapRef}
                 style={styles.map}
                 provider={PROVIDER_GOOGLE}
+                customMapStyle={isDarkMode ? darkMapStyle : []}
                 initialRegion={{
                     latitude: userLocation.coords.latitude,
                     longitude: userLocation.coords.longitude,
@@ -449,7 +509,13 @@ export default function NavigatePickupScreen()
                 showsUserLocation
                 showsMyLocationButton={false}
                 showsCompass={false}
+                rotateEnabled={true}
+                pitchEnabled={true}
                 toolbarEnabled={false}
+                showsIndoors={true}
+                showsIndoorLevelPicker={true}
+                showsTraffic={false}
+                showsBuildings={true}
             >
                 {routeCoordinates.length > 0 && (
                     <Polyline
@@ -471,12 +537,12 @@ export default function NavigatePickupScreen()
                             </View>
                             <View style={styles.pinStem} />
                             <View style={styles.pinPoint} />
-                            <Text style={styles.markerText}>{bottleCount}</Text>
                         </View>
                     </View>
                 </Marker>
             </MapView>
-            <BackButton mode="cancel" onCancel={() => router.replace('/pages/collector/map')} />
+            
+            <BackButton mode="cancel" onCancel={handleCancelPress} isDarkMode={isDarkMode} />
 
             {timeRemaining > 0 && (
                 <View style={[styles.timerContainer, { top: 20 + insets.top }]}>
@@ -484,43 +550,52 @@ export default function NavigatePickupScreen()
                 </View>
             )}
 
+            {/* Map Mode Toggle - circular, top right */}
+            <TouchableOpacity 
+                style={[styles.mapModeToggle, isDarkMode && styles.mapModeToggleDark, { top: timeRemaining > 0 ? 90 + insets.top : 20 + insets.top }]}
+                onPress={toggleMapMode}
+            >
+                <FontAwesome5 
+                    name={isDarkMode ? 'sun' : 'moon'} 
+                    size={20} 
+                    color={isDarkMode ? '#FCD34D' : '#1f2937'} 
+                />
+            </TouchableOpacity>
+
+            {/* Combined controls - horizontal, centered, above info container */}
             {!navigationMode && (
-                <View style={[styles.travelModeContainer, { bottom: 200 }]}>
+                <View style={styles.controlsContainer}>
+                    {/* Travel mode buttons */}
                     <TouchableOpacity
-                        style={[styles.travelModeButton, travelMode === 'walking' && styles.travelModeButtonActive]}
+                        style={[styles.travelModeButton, travelMode === 'walking' && styles.travelModeButtonActive, isDarkMode && styles.travelModeButtonDark]}
                         onPress={() => changeTravelMode('walking')}
                     >
-                        <FontAwesome5 name="walking" size={20} color={travelMode === 'walking' ? '#3b82f6' : '#6b7280'} />
+                        <FontAwesome5 name="walking" size={20} color={travelMode === 'walking' ? '#3b82f6' : (isDarkMode ? '#9ca3af' : '#6b7280')} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.travelModeButton, travelMode === 'bicycling' && styles.travelModeButtonActive]}
+                        style={[styles.travelModeButton, travelMode === 'bicycling' && styles.travelModeButtonActive, isDarkMode && styles.travelModeButtonDark]}
                         onPress={() => changeTravelMode('bicycling')}
                     >
-                        <FontAwesome5 name="biking" size={20} color={travelMode === 'bicycling' ? '#3b82f6' : '#6b7280'} />
+                        <FontAwesome5 name="biking" size={20} color={travelMode === 'bicycling' ? '#3b82f6' : (isDarkMode ? '#9ca3af' : '#6b7280')} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.travelModeButton, travelMode === 'driving' && styles.travelModeButtonActive]}
+                        style={[styles.travelModeButton, travelMode === 'driving' && styles.travelModeButtonActive, isDarkMode && styles.travelModeButtonDark]}
                         onPress={() => changeTravelMode('driving')}
                     >
-                        <FontAwesome5 name="car" size={20} color={travelMode === 'driving' ? '#3b82f6' : '#6b7280'} />
+                        <FontAwesome5 name="car" size={20} color={travelMode === 'driving' ? '#3b82f6' : (isDarkMode ? '#9ca3af' : '#6b7280')} />
                     </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                        style={styles.zoomButton}
-                        onPress={zoomIn}
-                    >
-                        <Text style={styles.zoomButtonText}>+</Text>
+
+                    {/* Separator */}
+                    <View style={[styles.separator, isDarkMode && styles.separatorDark]} />
+
+                    {/* Zoom controls */}
+                    <TouchableOpacity style={[styles.zoomButton, isDarkMode && styles.zoomButtonDark]} onPress={zoomIn}>
+                        <Text style={[styles.zoomButtonText, isDarkMode && styles.zoomButtonTextDark]}>+</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.zoomButton}
-                        onPress={zoomOut}
-                    >
-                        <Text style={styles.zoomButtonText}>−</Text>
+                    <TouchableOpacity style={[styles.zoomButton, isDarkMode && styles.zoomButtonDark]} onPress={zoomOut}>
+                        <Text style={[styles.zoomButtonText, isDarkMode && styles.zoomButtonTextDark]}>-</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.zoomButton, styles.recenterButton]}
-                        onPress={recenterMap}
-                    >
+                    <TouchableOpacity style={[styles.zoomButton, styles.recenterButton, isDarkMode && styles.recenterButtonDark]} onPress={recenterMap}>
                         <Text style={styles.recenterButtonText}>⌖</Text>
                     </TouchableOpacity>
                 </View>
@@ -574,6 +649,15 @@ export default function NavigatePickupScreen()
                     {isNearby ? 'Confirm Pickup' : `Get within 50m (${Math.round(distanceToPin)}m away)`}
                 </Text>
             </TouchableOpacity>
+
+            <AlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onRequestClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+                isDarkMode={isDarkMode}
+            />
         </SafeAreaView>
     );
 }
@@ -587,11 +671,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#0f172a',
     },
     loadingText: {
         fontSize: 16,
-        color: '#6b7280',
+        color: '#94a3b8',
     },
     map: {
         flex: 1,
@@ -638,22 +722,6 @@ const styles = StyleSheet.create({
     },
     pinIcon: {
         fontSize: 20,
-    },
-    markerText: {
-        position: 'absolute',
-        top: -8,
-        right: -8,
-        backgroundColor: '#ef4444',
-        color: '#fff',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 10,
-        fontSize: 10,
-        fontWeight: '700',
-        minWidth: 20,
-        textAlign: 'center',
-        borderWidth: 2,
-        borderColor: '#fff',
     },
     infoContainer: {
         position: 'absolute',
@@ -729,8 +797,8 @@ const styles = StyleSheet.create({
         top: 20,
         right: 20,
         backgroundColor: '#FEF3C7',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         borderRadius: 12,
         borderWidth: 2,
         borderColor: '#F59E0B',
@@ -743,17 +811,91 @@ const styles = StyleSheet.create({
     timerText: {
         fontSize: 16,
         color: '#92400E',
-        fontWeight: '600',
+        fontWeight: '700',
         textAlign: 'center',
         fontVariant: ['tabular-nums'],
     },
-    travelModeContainer: {
+    mapModeToggle: {
         position: 'absolute',
-        left: 20,
-        right: 20,
+        right: 10,
+        width: 40,
+        height: 40,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    mapModeToggleDark: {
+        backgroundColor: '#374151',
+    },
+    mapModeText: {
+        fontSize: 14,
+        color: '#1f2937',
+        fontWeight: '600',
+    },
+    mapModeTextLight: {
+        color: '#1f2937',
+    },
+    controlsContainer: {
+        position: 'absolute',
+        bottom: 200,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 12,
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 20,
+        paddingBottom: 12,
+    },
+    separator: {
+        width: 2,
+        height: 30,
+        backgroundColor: '#e5e7eb',
+        marginHorizontal: 4,
+    },
+    separatorDark: {
+        backgroundColor: '#4b5563',
+    },
+    zoomButton: {
+        width: 40,
+        height: 40,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    zoomButtonDark: {
+        backgroundColor: '#374151',
+    },
+    zoomButtonText: {
+        fontSize: 24,
+        color: '#10b981',
+        fontWeight: 'bold',
+    },
+    zoomButtonTextDark: {
+        color: '#34d399',
+    },
+    recenterButton: {
+        backgroundColor: '#10b981',
+    },
+    recenterButtonDark: {
+        backgroundColor: '#059669',
+    },
+    recenterButtonText: {
+        fontSize: 24,
+        color: '#ffffff',
+        fontWeight: 'bold',
     },
     travelModeButton: {
         backgroundColor: '#FFFFFF',
@@ -769,6 +911,10 @@ const styles = StyleSheet.create({
         elevation: 5,
         borderWidth: 2,
         borderColor: '#e5e7eb',
+    },
+    travelModeButtonDark: {
+        backgroundColor: '#374151',
+        borderColor: '#4b5563',
     },
     travelModeButtonActive: {
         borderColor: '#3b82f6',
@@ -814,34 +960,5 @@ const styles = StyleSheet.create({
     instructionSubtext: {
         fontSize: 13,
         color: '#9ca3af',
-    },
-    zoomButton: {
-        width: 48,
-        height: 48,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 5,
-        borderWidth: 2,
-        borderColor: '#e5e7eb',
-    },
-    zoomButtonText: {
-        fontSize: 24,
-        color: '#6b7280',
-        fontWeight: 'bold',
-    },
-    recenterButton: {
-        backgroundColor: '#FFFFFF',
-        borderColor: '#e5e7eb',
-    },
-    recenterButtonText: {
-        fontSize: 20,
-        color: '#6b7280',
-        fontWeight: 'bold',
     },
 });

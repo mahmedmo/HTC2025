@@ -15,7 +15,6 @@ export default function MyPinsScreen()
     const router = useRouter();
     const [pins, setPins] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [dropdownVisible, setDropdownVisible] = useState(false);
 
     useFocusEffect(
         useCallback(() =>
@@ -60,32 +59,6 @@ export default function MyPinsScreen()
         }
     };
 
-    const handleBackPress = () =>
-    {
-        router.back();
-    };
-    const handleLogout = async () =>
-        {
-            Alert.alert(
-                'Logout',
-                'Are you sure you want to logout?',
-                [
-                    {
-                        text: 'Cancel',
-                        style: 'cancel',
-                    },
-                    {
-                        text: 'Logout',
-                        style: 'destructive',
-                        onPress: async () =>
-                        {
-                            await sessionService.clearSession();
-                            router.replace('/pages/login');
-                        },
-                    },
-                ]
-            );
-        };
     const getStatusColor = (status: string) =>
     {
         switch (status)
@@ -131,113 +104,140 @@ export default function MyPinsScreen()
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <BackButton  mode='arrow' />
-            <View style={styles.topBar}>
+        <View style={styles.background}>
+            {/* Decorative background elements */}
+            <View style={styles.gradientTop} />
+            <View style={styles.gradientBottom} />
+            <View style={styles.floatingCircle1} />
+            <View style={styles.floatingCircle2} />
+            <View style={styles.floatingCircle3} />
+            <View style={styles.floatingCircle4} />
+            <View style={styles.accentShape1} />
+            <View style={styles.accentShape2} />
+            
+            {/* Decorative dots */}
+            <View style={styles.dot1} />
+            <View style={styles.dot2} />
+            <View style={styles.dot3} />
+            <View style={styles.dot4} />
+            
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <BackButton mode='arrow' />
                 
-                <TouchableOpacity 
-                    style={styles.profileButton}
-                    onPress={() => setDropdownVisible(!dropdownVisible)}
-                >
-                    <Ionicons name="person-circle" size={40} color="#10b981" />
-                </TouchableOpacity>
-
-            </View>
-
-            {dropdownVisible && (
-                <><TouchableOpacity
-                    style={styles.dropdownOverlay}
-                    onPress={() => setDropdownVisible(false)}
-                    activeOpacity={1} /><View style={styles.dropdown}>
-                        <TouchableOpacity
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                                setDropdownVisible(false);
-                                router.push('/pages/profile');
-                            } }
-                        >
-                            <Ionicons name="person-outline" size={20} color="#374151" />
-                            <Text style={styles.dropdownText}>Your Profile</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                                setDropdownVisible(false);
-                                router.push('/pages/leaderboard');
-                            } }
-                        >
-                            <Ionicons name="trophy-outline" size={20} color="#374151" />
-                            <Text style={styles.dropdownText}>Leaderboard</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                                setDropdownVisible(false);
-                                router.push('/pages/login');
-                            } }
-                        >
-                            <Ionicons name="power-outline" size={20} color="#374151" />
-                            <Text style={styles.dropdownText} onPress={handleLogout}>Log Out</Text>
-                        </TouchableOpacity>
-                    </View></>
-            )}
-            <Text style={styles.title}>My Pins</Text>
+                {/* Header Section */}
+                <View style={styles.headerContainer}>
+                    <View style={styles.headerIconContainer}>
+                        <Ionicons name="location" size={40} color="#10b981" />
+                    </View>
+                    <Text style={styles.title}>My Pins</Text>
+                    <Text style={styles.subtitle}>Your active bottle locations</Text>
+                </View>
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#10b981" />
+                    <View style={styles.loadingCircle}>
+                        <ActivityIndicator size="large" color="#10b981" />
+                    </View>
                     <Text style={styles.loadingText}>Loading your pins...</Text>
                 </View>
             ) : pins.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyIcon}>📍</Text>
+                    <View style={styles.emptyIconCircle}>
+                        <Ionicons name="location-outline" size={80} color="#10b981" />
+                    </View>
                     <Text style={styles.emptyText}>No pins yet</Text>
                     <Text style={styles.emptySubtext}>Start by pinning some bottles!</Text>
                 </View>
             ) : (
-                <ScrollView style={styles.list}>
-                    {pins.map(pin => (
-                        <View key={pin.submission_id} style={styles.card}>
-                            <View style={styles.header}>
-                                <View>
-                                    <Text style={styles.count}>Bottle</Text>
-                                    <Text style={styles.location}>{pin.location}</Text>
-                                    <Text style={styles.count}>{pin.bottle_count ?? 12}</Text>
-                                    <Text style={styles.count}>
-                                        {pin.bottle_count ?? Math.floor(Math.random() * 10) + 1} bottles pinged {Math.floor(Math.random() * 25)} hrs ago
-                                    </Text>
-=                                </View>
-                                <View style={[styles.badge, { backgroundColor: '#10b981' }]}>
-                                    <Text style={styles.badgeText}>ACTIVE</Text>
+                <ScrollView 
+                    style={styles.list}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.listContent}
+                >
+                    {pins.map((pin, index) => {
+                        // Format the date from the database
+                        const formatDate = (dateStr: string) => {
+                            if (!dateStr) return 'Recently';
+                            
+                            try {
+                                const pinDate = new Date(dateStr);
+                                const now = new Date();
+                                const diffMs = now.getTime() - pinDate.getTime();
+                                const diffMins = Math.floor(diffMs / 60000);
+                                const diffHours = Math.floor(diffMs / 3600000);
+                                const diffDays = Math.floor(diffMs / 86400000);
+                                
+                                if (diffMins < 1) return 'Just now';
+                                if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                                if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+                                if (diffDays === 1) return '1 day ago';
+                                return `${diffDays} days ago`;
+                            } catch (e) {
+                                console.error('Error parsing date:', e);
+                                return 'Recently';
+                            }
+                        };
+                        
+                        const timeAgo = formatDate(pin.date);
+                        
+                        return (
+                            <View key={pin.submission_id} style={styles.card}>
+                                {/* Card decorations */}
+                                <View style={styles.cardShimmer} />
+                                <View style={styles.cardGlow} />
+                                
+                                <View style={styles.header}>
+                                    <View style={styles.headerLeft}>
+                                        <View style={styles.iconBadge}>
+                                            <Ionicons name="water" size={24} color="#10b981" />
+                                        </View>
+                                        <View>
+                                            <Text style={styles.pinName}>Bottle Collection</Text>
+                                            <View style={styles.infoRow}>
+                                                <Ionicons name="time" size={14} color="#94a3b8" />
+                                                <Text style={styles.pinInfo}>
+                                                    {timeAgo}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                    <View style={styles.badge}>
+                                        <View style={styles.badgeGlow} />
+                                        <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                                        <Text style={styles.badgeText}>ACTIVE</Text>
+                                    </View>
                                 </View>
-                            </View>
-                             
-                            <View style={styles.container}>
-                                <MapView
-                                    style={styles.map}
-                                    initialRegion={{
-                                        latitude: parseFloat(pin.location.split(',')[0]),
-                                        longitude: parseFloat(pin.location.split(',')[1]),
-                                        latitudeDelta: 0.005,
-                                        longitudeDelta: 0.005,
-                                    }}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                    rotateEnabled={false}
-                                >
-                                    <Marker
-                                        coordinate={{
+                                 
+                                <View style={styles.mapContainer}>
+                                    <MapView
+                                        style={styles.map}
+                                        initialRegion={{
                                             latitude: parseFloat(pin.location.split(',')[0]),
                                             longitude: parseFloat(pin.location.split(',')[1]),
+                                            latitudeDelta: 0.005,
+                                            longitudeDelta: 0.005,
                                         }}
-                                    />
-                                </MapView>
+                                        scrollEnabled={false}
+                                        zoomEnabled={false}
+                                        rotateEnabled={false}
+                                    >
+                                        <Marker
+                                            coordinate={{
+                                                latitude: parseFloat(pin.location.split(',')[0]),
+                                                longitude: parseFloat(pin.location.split(',')[1]),
+                                            }}
+                                        />
+                                    </MapView>
+                                    <View style={styles.mapOverlay}>
+                                        <View style={styles.locationBadge}>
+                                            <Ionicons name="navigate" size={12} color="#10b981" />
+                                            <Text style={styles.locationText}>Pinned Location</Text>
+                                        </View>
+                                    </View>
+                                </View>
                             </View>
-                        </View>
-                    ))}
+                        );
+                    })}
                 </ScrollView>
             )}
 
@@ -245,34 +245,203 @@ export default function MyPinsScreen()
                 style={styles.button}
                 onPress={() => router.push('/pages/pinner/upload')}
             >
-                <Text style={styles.buttonText}>Pin Bottles</Text>
+                <View style={styles.buttonGradient} />
+                <View style={styles.buttonContent}>
+                    <Ionicons name="add-circle" size={24} color="#fff" />
+                    <Text style={styles.buttonText}>Pin Bottles</Text>
+                </View>
             </TouchableOpacity>
         </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        backgroundColor: '#1e293b',
+        position: 'relative',
+    },
+    gradientTop: {
+        position: 'absolute',
+        top: -80,
+        left: -80,
+        right: -80,
+        height: 350,
+        backgroundColor: '#3b82f6',
+        opacity: 0.08,
+        borderRadius: 175,
+        transform: [{ scaleX: 1.5 }],
+    },
+    gradientBottom: {
+        position: 'absolute',
+        bottom: -100,
+        left: -80,
+        right: -80,
+        height: 400,
+        backgroundColor: '#10b981',
+        opacity: 0.08,
+        borderRadius: 200,
+        transform: [{ scaleX: 1.5 }],
+    },
+    floatingCircle1: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: '#10b981',
+        opacity: 0.06,
+        top: 100,
+        right: -60,
+    },
+    floatingCircle2: {
+        position: 'absolute',
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: '#3b82f6',
+        opacity: 0.05,
+        top: 250,
+        left: -40,
+    },
+    floatingCircle3: {
+        position: 'absolute',
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        backgroundColor: '#8b5cf6',
+        opacity: 0.05,
+        bottom: 200,
+        right: 30,
+    },
+    floatingCircle4: {
+        position: 'absolute',
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        backgroundColor: '#06b6d4',
+        opacity: 0.06,
+        bottom: -50,
+        left: -50,
+    },
+    accentShape1: {
+        position: 'absolute',
+        width: 220,
+        height: 220,
+        backgroundColor: '#ec4899',
+        opacity: 0.04,
+        top: -70,
+        left: -70,
+        borderRadius: 110,
+        transform: [{ rotate: '45deg' }],
+    },
+    accentShape2: {
+        position: 'absolute',
+        width: 190,
+        height: 190,
+        backgroundColor: '#f59e0b',
+        opacity: 0.04,
+        bottom: -60,
+        right: -60,
+        borderRadius: 95,
+        transform: [{ rotate: '-30deg' }],
+    },
+    dot1: {
+        position: 'absolute',
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#34d399',
+        opacity: 0.4,
+        top: 160,
+        left: 70,
+    },
+    dot2: {
+        position: 'absolute',
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#60a5fa',
+        opacity: 0.5,
+        top: 300,
+        right: 90,
+    },
+    dot3: {
+        position: 'absolute',
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#a78bfa',
+        opacity: 0.4,
+        bottom: 300,
+        left: 50,
+    },
+    dot4: {
+        position: 'absolute',
+        width: 7,
+        height: 7,
+        borderRadius: 3.5,
+        backgroundColor: '#fbbf24',
+        opacity: 0.4,
+        top: 450,
+        right: 130,
+    },
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        paddingHorizontal: 20,
+        paddingTop: 10,
+    },
+    headerContainer: {
+        alignItems: 'center',
+        marginTop: 16,
+        marginBottom: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.25)',
+    },
+    headerIconContainer: {
+        marginBottom: 6,
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#10b981',
-        marginTop: 20,
-        marginBottom: 10,
-        textAlign: 'center',
+        fontSize: 30,
+        fontWeight: '900',
+        color: '#fff',
+        marginBottom: 4,
+        textShadowColor: 'rgba(16, 185, 129, 0.4)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
+        letterSpacing: 0.5,
+    },
+    subtitle: {
+        fontSize: 13,
+        color: '#94a3b8',
+        fontWeight: '600',
+        letterSpacing: 0.8,
+        textTransform: 'uppercase',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
+    loadingCircle: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+        borderWidth: 2,
+        borderColor: 'rgba(16, 185, 129, 0.3)',
+    },
     loadingText: {
-        marginTop: 16,
         fontSize: 16,
-        color: '#6b7280',
+        color: '#cbd5e1',
+        fontWeight: '600',
     },
     emptyContainer: {
         flex: 1,
@@ -280,51 +449,151 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 40,
     },
+    emptyIconCircle: {
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+        borderWidth: 3,
+        borderColor: 'rgba(16, 185, 129, 0.3)',
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+    },
     emptyIcon: {
         fontSize: 64,
         marginBottom: 16,
     },
     emptyText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#374151',
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#fff',
         marginBottom: 8,
+        letterSpacing: 0.5,
     },
     emptySubtext: {
         fontSize: 16,
-        color: '#6b7280',
+        color: '#94a3b8',
+        fontWeight: '500',
     },
     list: {
         flex: 1,
-        padding: 20,
+    },
+    listContent: {
+        paddingBottom: 16,
     },
     card: {
-        backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 12,
-        marginBottom: 15,
+        backgroundColor: 'rgba(51, 65, 85, 0.5)',
+        padding: 16,
+        borderRadius: 18,
+        marginBottom: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(148, 163, 184, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    cardShimmer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '30%',
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderTopLeftRadius: 18,
+        borderTopRightRadius: 18,
+    },
+    cardGlow: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 2,
+        backgroundColor: '#10b981',
+        opacity: 0.3,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 15,
+        marginBottom: 14,
     },
-    count: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#374151',
-        marginBottom: 8,
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    iconBadge: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(16, 185, 129, 0.18)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: 'rgba(16, 185, 129, 0.35)',
+    },
+    pinName: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: '#fff',
+        marginBottom: 5,
+        letterSpacing: 0.3,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    pinInfo: {
+        fontSize: 12,
+        color: '#cbd5e1',
+        fontWeight: '500',
+        marginLeft: 2,
     },
     badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#10b981',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 12,
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+        elevation: 4,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    badgeGlow: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '50%',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
     },
     badgeText: {
         color: '#fff',
-        fontSize: 12,
-        fontWeight: '600',
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.8,
+        textShadowColor: 'rgba(0, 0, 0, 0.2)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
     location: {
         fontSize: 14,
@@ -335,17 +604,83 @@ const styles = StyleSheet.create({
         color: '#9ca3af',
         fontFamily: 'monospace',
     },
+    mapContainer: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: 'rgba(16, 185, 129, 0.25)',
+        position: 'relative',
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+    },
+    map: {
+        width: '100%',
+        height: 130,
+    },
+    mapOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 8,
+        backgroundColor: 'rgba(30, 41, 59, 0.85)',
+        borderBottomLeftRadius: 10,
+        borderBottomRightRadius: 10,
+    },
+    locationBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+    },
+    locationText: {
+        fontSize: 11,
+        color: '#e2e8f0',
+        fontWeight: '600',
+        letterSpacing: 0.3,
+    },
     button: {
         backgroundColor: '#10b981',
-        padding: 18,
-        margin: 20,
-        borderRadius: 12,
+        padding: 16,
+        marginVertical: 16,
+        marginHorizontal: 4,
+        borderRadius: 14,
         alignItems: 'center',
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 6,
+        borderWidth: 2,
+        borderColor: 'rgba(52, 211, 153, 0.4)',
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    buttonGradient: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '50%',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        borderTopLeftRadius: 14,
+        borderTopRightRadius: 14,
+    },
+    buttonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        zIndex: 1,
     },
     buttonText: {
         color: '#fff',
         fontSize: 18,
-        fontWeight: '600',
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        textShadowColor: 'rgba(0, 0, 0, 0.2)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
     },
     cardMap: {
         width: '100%',
@@ -354,59 +689,4 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         overflow: 'hidden',
     },
-    map: {
-            width: '100%',
-            height: 120,
-    },
-    dropdownOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 999,    
-    },
-    topBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 10,
-    },
-    profileButton: {
-        padding: 5,
-        top: 5,
-        right: -320,
-    },
-    dropdown: {
-        position: 'absolute',
-        top: 70,
-        right: 20,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 8,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-        zIndex: 1000,
-        minWidth: 200,
-    },
-    dropdownItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-    },
-    dropdownText: {
-        marginLeft: 6,
-        fontSize: 16,
-        color: '#374151',
-        fontWeight: '500',
-    }
 });

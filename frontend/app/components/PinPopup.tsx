@@ -18,9 +18,10 @@ interface PinPopupProps {
   pin: IPin | null;
   onClose: () => void;
   onAccept: (pin: IPin) => void;
+  isDarkMode?: boolean;
 }
 
-export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupProps) {
+export default function PinPopup({ visible, pin, onClose, onAccept, isDarkMode = false }: PinPopupProps) {
   const [timeRemaining, setTimeRemaining] = useState(1800);
   const panY = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
@@ -119,6 +120,7 @@ export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupPr
           <Animated.View
             style={[
               styles.container,
+              isDarkMode && styles.containerDark,
               {
                 transform: [{ translateY: panY }],
               },
@@ -155,24 +157,24 @@ export default function PinPopup({ visible, pin, onClose, onAccept }: PinPopupPr
           {/* Details */}
           <View style={styles.detailsContainer}>
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Bottle Count:</Text>
-              <Text style={styles.value}>{pin.bottleCount} bottles</Text>
+              <Text style={[styles.label, isDarkMode && styles.labelDark]}>Bottle Count:</Text>
+              <Text style={[styles.value, isDarkMode && styles.valueDark]}>{pin.bottleCount} bottles</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Estimated Value:</Text>
+              <Text style={[styles.label, isDarkMode && styles.labelDark]}>Estimated Value:</Text>
               <Text style={styles.valueHighlight}>${pin.estimatedValue.toFixed(2)}</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Uploaded:</Text>
-              <Text style={styles.value}>{formatDate(pin.createdAt)}</Text>
+              <Text style={[styles.label, isDarkMode && styles.labelDark]}>Uploaded:</Text>
+              <Text style={[styles.value, isDarkMode && styles.valueDark]}>{formatDate(pin.createdAt)}</Text>
             </View>
 
             {pin.location.address && (
               <View style={styles.detailRow}>
-                <Text style={styles.label}>Location:</Text>
-                <Text style={styles.value} numberOfLines={2}>{pin.location.address}</Text>
+                <Text style={[styles.label, isDarkMode && styles.labelDark]}>Location:</Text>
+                <Text style={[styles.value, isDarkMode && styles.valueDark]} numberOfLines={2}>{pin.location.address}</Text>
               </View>
             )}
           </View>
@@ -202,6 +204,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
+  },
+  containerDark: {
+    backgroundColor: '#1f2937',
   },
   header: {
     alignItems: 'center',
@@ -269,12 +274,18 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
   },
+  labelDark: {
+    color: '#d1d5db',
+  },
   value: {
     fontSize: 16,
     color: '#1F2937',
     fontWeight: '600',
     flex: 1,
     textAlign: 'right',
+  },
+  valueDark: {
+    color: '#f9fafb',
   },
   valueHighlight: {
     fontSize: 18,

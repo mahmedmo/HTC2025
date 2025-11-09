@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SESSION_KEY = 'user_session';
+const MAP_MODE_KEY = 'map_mode';
 
 interface IUserSession
 {
@@ -73,5 +74,39 @@ export const sessionService = {
 {
     const session = await this.getSession();
     return session?.userId || null;
-}
+},
+
+    async saveMapMode(isDarkMode: boolean): Promise<void>
+    {
+        try
+        {
+            await AsyncStorage.setItem(MAP_MODE_KEY, JSON.stringify(isDarkMode));
+            console.log('[Session] Map mode saved:', isDarkMode ? 'dark' : 'light');
+        }
+        catch (error)
+        {
+            console.error('[Session] Error saving map mode:', error);
+        }
+    },
+
+    async getMapMode(): Promise<boolean>
+    {
+        try
+        {
+            const mapMode = await AsyncStorage.getItem(MAP_MODE_KEY);
+            if (mapMode !== null)
+            {
+                const isDarkMode = JSON.parse(mapMode);
+                console.log('[Session] Map mode retrieved:', isDarkMode ? 'dark' : 'light');
+                return isDarkMode;
+            }
+            console.log('[Session] No map mode found, defaulting to light');
+            return false; // Default to light mode
+        }
+        catch (error)
+        {
+            console.error('[Session] Error getting map mode:', error);
+            return false; // Default to light mode on error
+        }
+    },
 };

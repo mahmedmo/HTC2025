@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { MAPS_CONFIG } from '../../../config/maps';
+import { MAPS_CONFIG, darkMapStyle } from '../../../config/maps';
 import { apiService } from '../../../services/api';
 import BackButton from '../../components/BackButton';
 
@@ -84,6 +84,7 @@ export default function PinnerMapScreen()
                 ref={mapRef}
                 style={styles.map}
                 provider={PROVIDER_GOOGLE}
+                customMapStyle={darkMapStyle}
                 initialRegion={{
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
@@ -128,7 +129,7 @@ export default function PinnerMapScreen()
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#0f172a',
     },
     title: {
         fontSize: 28,
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 18,
-        color: '#6b7280',
+        color: '#94a3b8',
     },
     map: {
         flex: 1,
@@ -198,14 +199,16 @@ const styles = StyleSheet.create({
         bottom: 20,
         left: 20,
         right: 20,
-        backgroundColor: '#ffffff',
+        backgroundColor: 'rgba(30, 41, 59, 0.95)',
         padding: 16,
         borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
         shadowRadius: 8,
-        elevation: 5,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.3)',
     },
     infoText: {
         fontSize: 16,

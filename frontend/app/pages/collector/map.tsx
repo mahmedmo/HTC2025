@@ -4,13 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useNavigation } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { MAPS_CONFIG } from '../../../config/maps';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { MAPS_CONFIG, darkMapStyle } from '../../../config/maps';
 import BackButton from '../../components/BackButton';
 import PinPopup from '../../components/PinPopup';
 import { IPin } from '../../../types';
 import { apiService } from '../../../services/api';
+import { sessionService } from '../../../services/session';
 import { CommonActions } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
 
 export default function CollectorMapScreen()
 {
@@ -22,6 +23,7 @@ export default function CollectorMapScreen()
     const [pins, setPins] = useState<IPin[]>([]);
     const [selectedPin, setSelectedPin] = useState<IPin | null>(null);
     const [showPopup, setShowPopup] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
     const colorAnimations = useRef<Map<string, Animated.Value>>(new Map()).current;
 
     const handleBackPress = () =>
@@ -33,7 +35,14 @@ export default function CollectorMapScreen()
     useEffect(() =>
     {
         getCurrentLocation();
+        loadMapMode();
     }, []);
+
+    const loadMapMode = async () =>
+    {
+        const savedMode = await sessionService.getMapMode();
+        setIsDarkMode(savedMode);
+    };
 
     const getCurrentLocation = async () =>
     {
@@ -93,7 +102,7 @@ export default function CollectorMapScreen()
     };
 
     const recenterMap = () => {
-        if (location) {
+        if (location && mapRef.current) {
             const newRegion = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -101,18 +110,14 @@ export default function CollectorMapScreen()
                 longitudeDelta: 0.02,
             };
             setRegion(newRegion);
-            mapRef.current?.animateToRegion(newRegion, 300);
-            
-            // Reset camera to north-up orientation
-            mapRef.current?.animateCamera({
-                center: {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                },
-                heading: 0,
-                zoom: 15,
-            }, { duration: 300 });
+            mapRef.current.animateToRegion(newRegion, 300);
         }
+    };
+
+    const toggleMapMode = () => {
+        const newMode = !isDarkMode;
+        setIsDarkMode(newMode);
+        sessionService.saveMapMode(newMode);
     };
 
     const fetchPins = async () =>
@@ -358,6 +363,7 @@ export default function CollectorMapScreen()
                 ref={mapRef}
                 style={styles.map}
                 provider={PROVIDER_GOOGLE}
+                customMapStyle={isDarkMode ? darkMapStyle : []}
                 initialRegion={{
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
@@ -368,11 +374,10 @@ export default function CollectorMapScreen()
                 showsMyLocationButton={false}
                 showsCompass={false}
                 toolbarEnabled={false}
-                rotateEnabled={true}
-                onRegionChangeComplete={(region) => {
-                    // Map heading is tracked through camera changes
-                    // React Native Maps doesn't expose heading in Region type
-                }}
+                showsIndoors={true}
+                showsIndoorLevelPicker={true}
+                showsTraffic={false}
+                showsBuildings={true}
             >
                 {pins.map(pin => {
                     const isSelected = selectedPin?.pinId === pin.pinId;
@@ -430,34 +435,32 @@ export default function CollectorMapScreen()
                 })}
             </MapView>
             
-            <BackButton  mode='arrow' />
+            <BackButton onPress={handleBackPress} isDarkMode={isDarkMode} />
+
+            {/* Map Mode Toggle - circular, above zoom controls */}
+            <TouchableOpacity 
+                style={[styles.mapModeToggle, isDarkMode && styles.mapModeToggleDark, { top: 20 + insets.top }]}
+                onPress={toggleMapMode}
+            >
+                <FontAwesome5 
+                    name={isDarkMode ? 'sun' : 'moon'} 
+                    size={20} 
+                    color={isDarkMode ? '#FCD34D' : '#1f2937'} 
+                />
+            </TouchableOpacity>
 
             {/* Zoom controls */}
-            <View style={[styles.zoomButtonsContainer, { top: 60 + insets.top }]}>
-                <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
-                    <Text style={styles.zoomButtonText}>+</Text>
+            <View style={[styles.zoomButtonsContainer, { top: 68 + insets.top }]}>
+                <TouchableOpacity style={[styles.zoomButton, isDarkMode && styles.zoomButtonDark]} onPress={zoomIn}>
+                    <Text style={[styles.zoomButtonText, isDarkMode && styles.zoomButtonTextDark]}>+</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
-                    <Text style={styles.zoomButtonText}>−</Text>
+                <TouchableOpacity style={[styles.zoomButton, isDarkMode && styles.zoomButtonDark]} onPress={zoomOut}>
+                    <Text style={[styles.zoomButtonText, isDarkMode && styles.zoomButtonTextDark]}>-</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.zoomButton, styles.recenterButton]} onPress={recenterMap}>
+                <TouchableOpacity style={[styles.zoomButton, styles.recenterButton, isDarkMode && styles.recenterButtonDark]} onPress={recenterMap}>
                     <Text style={styles.recenterButtonText}>⌖</Text>
                 </TouchableOpacity>
             </View>
-
-                        <TouchableOpacity
-                style={[styles.compassButton, { bottom: 100 + insets.bottom }]}
-                onPress={recenterMap}
-            >
-                <View style={styles.compassContainer}>
-                    <View style={styles.compassCircle}>
-                        <View style={styles.compassNeedle}>
-                            <View style={styles.compassNorth} />
-                            <View style={styles.compassSouth} />
-                        </View>
-                    </View>
-                </View>
-            </TouchableOpacity>
 
             <TouchableOpacity
                 style={[styles.findClosestButton, { bottom: 20 + insets.bottom }]}
@@ -471,6 +474,7 @@ export default function CollectorMapScreen()
                 pin={selectedPin}
                 onClose={handleClosePopup}
                 onAccept={handleAcceptPin}
+                isDarkMode={isDarkMode}
             />
         </View>
     );
@@ -484,11 +488,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#0f172a',
     },
     loadingText: {
         fontSize: 16,
-        color: '#6b7280',
+        color: '#94a3b8',
     },
     map: {
         flex: 1,
@@ -574,105 +578,71 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
     },
+    mapModeToggle: {
+        position: 'absolute',
+        right: 10,
+        width: 40,
+        height: 40,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    mapModeToggleDark: {
+        backgroundColor: '#374151',
+    },
+    mapModeText: {
+        fontSize: 14,
+        color: '#1f2937',
+        fontWeight: '600',
+    },
+    mapModeTextLight: {
+        color: '#1f2937',
+    },
     zoomButtonsContainer: {
         position: 'absolute',
-        right: 8,
-        flexDirection: 'column',
-        gap: 8,
+        right: 10,
+        backgroundColor: 'transparent',
     },
     zoomButton: {
         width: 40,
         height: 40,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 4,
+        backgroundColor: 'white',
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.3,
-        shadowRadius: 2,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    zoomButtonDark: {
+        backgroundColor: '#374151',
     },
     zoomButtonText: {
-        fontSize: 20,
-        color: '#5f6368',
-        fontWeight: '600',
+        fontSize: 24,
+        color: '#10b981',
+        fontWeight: 'bold',
+    },
+    zoomButtonTextDark: {
+        color: '#34d399',
     },
     recenterButton: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#10b981',
+    },
+    recenterButtonDark: {
+        backgroundColor: '#059669',
     },
     recenterButtonText: {
-        fontSize: 18,
-        color: '#5f6368',
-        fontWeight: '600',
-    },
-    compassButton: {
-        position: 'absolute',
-        left: 20,
-        width: 40,
-        height: 40,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 4,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.3,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    compassButtonText: {
-        fontSize: 20,
-        color: '#5f6368',
-    },
-    compassContainer: {
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    compassCircle: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: '#5f6368',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'transparent',
-    },
-    compassNeedle: {
-        width: 20,
-        height: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    compassNorth: {
-        width: 0,
-        height: 0,
-        backgroundColor: 'transparent',
-        borderStyle: 'solid',
-        borderLeftWidth: 4,
-        borderRightWidth: 4,
-        borderBottomWidth: 10,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderBottomColor: '#EA4335', // Red for north
-        position: 'absolute',
-        top: 0,
-    },
-    compassSouth: {
-        width: 0,
-        height: 0,
-        backgroundColor: 'transparent',
-        borderStyle: 'solid',
-        borderLeftWidth: 4,
-        borderRightWidth: 4,
-        borderTopWidth: 10,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: '#5f6368', // Gray for south
-        position: 'absolute',
-        bottom: 0,
+        fontSize: 24,
+        color: '#ffffff',
+        fontWeight: 'bold',
     }
 });

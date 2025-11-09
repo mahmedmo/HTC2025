@@ -3,10 +3,10 @@ import { IAPIResponse } from '../types';
 
 const API_BASE_URL = 'http://98.92.69.158:5000';
 
-interface ILocationData {
+interface ILocationData
+{
     lat: number;
     lng: number;
-    submission_id?: string; // optional because some endpoints might not include it
 }
 
 interface IUploadResponse
@@ -101,79 +101,7 @@ export const apiService = {
                 error: error instanceof Error ? error.message : 'Network error',
             };
         }
-    },async addPoint(userId: number, location: string): Promise<IAPIResponse<{ message: string }>> {
-    console.log('[API] addPoint - Request started', { userId, location });
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/add_point`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                location: location,
-            }),
-        });
-
-        const data = await response.json();
-
-        console.log('[API] addPoint - Response:', {
-            status: response.status,
-            ok: response.ok,
-            data,
-        });
-
-        if (!response.ok) {
-            console.error('[API] addPoint - Failed:', data.error);
-            return {
-                success: false,
-                error: data.error || 'Failed to add point',
-            };
-        }
-
-        console.log('[API] addPoint - Success');
-        return {
-            success: true,
-            data: data,
-        };
-    } catch (error) {
-        console.error('[API] addPoint - Error:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Network error',
-        };
-    }
-},async getLeaderboard(): Promise<IAPIResponse<any>> {
-    console.log('[API] getLeaderboard - Request started');
-    try {
-        const response = await fetch(`${API_BASE_URL}/leaderboard`);
-        const data = await response.json();
-
-        console.log('[API] getLeaderboard - Response:', {
-            status: response.status,
-            ok: response.ok,
-            data,
-        });
-
-        if (!response.ok) {
-            console.error('[API] getLeaderboard - Failed:', data.error);
-            return {
-                success: false,
-                error: data.error || 'Failed to fetch leaderboard',
-            };
-        }
-
-        console.log('[API] getLeaderboard - Success');
-        return { success: true, data };
-    } catch (error) {
-        console.error('[API] getLeaderboard - Error:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Network error',
-        };
-    }
-},
+    },
 
     async getActiveLocations(): Promise<IAPIResponse<ILocationResponse>>
     {

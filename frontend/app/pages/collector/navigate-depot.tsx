@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { MAPS_CONFIG } from '../../../config/maps';
+import { MAPS_CONFIG, darkMapStyle } from '../../../config/maps';
 import { getRoute, TravelMode } from '../../../services/routing';
 import BackButton from '../../components/BackButton';
 
@@ -378,6 +378,7 @@ export default function NavigateDepotScreen()
                 ref={mapRef}
                 style={styles.map}
                 provider={PROVIDER_GOOGLE}
+                customMapStyle={darkMapStyle}
                 initialRegion={{
                     latitude: userLocation.coords.latitude,
                     longitude: userLocation.coords.longitude,
@@ -524,11 +525,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#0f172a',
     },
     loadingText: {
         fontSize: 16,
-        color: '#6b7280',
+        color: '#94a3b8',
     },
     map: {
         flex: 1,
