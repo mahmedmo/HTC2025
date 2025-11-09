@@ -1,0 +1,16 @@
+{
+    "repository": {
+        "repositoryArn": "arn:aws:ecr:us-east-1:989374164925:repository/bottle-backend",
+        "registryId": "989374164925",
+        "repositoryName": "bottle-backend",
+        "repositoryUri": "989374164925.dkr.ecr.us-east-1.amazonaws.com/bottle-backend",
+        "createdAt": "2025-11-08T20:47:50.813000-07:00",
+        "imageTagMutability": "MUTABLE",
+        "imageScanningConfiguration": {
+            "scanOnPush": false
+        },
+        "encryptionConfiguration": {
+            "encryptionType": "AES256"
+        }
+    }
+}

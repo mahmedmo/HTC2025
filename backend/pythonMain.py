@@ -14,6 +14,7 @@ import psycopg2
 s3 = boto3.client("s3")
 # name of bucket == images-9912
 
+from flask_cors import CORS
 
 
 
@@ -50,7 +51,6 @@ CREATE TABLE IF NOT EXISTS submissions (
 conn.commit()
 
 app = Flask(__name__)
-
 
 @app.route("/dbcheck")
 def dbcheck():

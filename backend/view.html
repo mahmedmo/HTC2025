@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>View Bottle Image</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+      padding-top: 60px;
+    }
+    img {
+      max-width: 400px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin-top: 20px;
+    }
+    .info {
+      margin-top: 12px;
+      font-size: 15px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h2>📦 Bottle Image Test Viewer</h2>
+  <div id="result">Fetching image...</div>
+
+  <script>
+    async function loadImage() {
+      try {
+        // Make POST request to your Flask endpoint
+        const res = await fetch("http://127.0.0.1:5000/s3info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ submission_id: "4399ae3a9591a4ca37971f4edcb7777f" })
+        });
+
+        const data = await res.json();
+        console.log("Response:", data);
+
+        const resultDiv = document.getElementById("result");
+
+        if (data.s3_key) {
+          // Construct direct S3 URL
+          const imgUrl = `https://images-9912.s3.amazonaws.com/${data.s3_key}`;
+          resultDiv.innerHTML = `
+            <img src="${imgUrl}" alt="Bottle Image">
+            <div class="info">
+              <p><b>Submission ID:</b> ${data.submission_id}</p>
+              <p><b>Location:</b> ${data.location}</p>
+              <p><b>User ID:</b> ${data.user_id}</p>
+            </div>
+          `;
+        } else {
+          resultDiv.innerHTML = `<p style="color:red;">${data.error || "Image not found"}</p>`;
+        }
+      } catch (err) {
+        console.error("Error fetching image:", err);
+        document.getElementById("result").innerHTML =
+          "<p style='color:red;'>❌ Failed to fetch image info.</p>";
+      }
+    }
+
+    loadImage();
+  </script>
+</body>
+</html>
