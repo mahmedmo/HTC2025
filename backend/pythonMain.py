@@ -371,21 +371,28 @@ def check_user():
 
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT * FROM users WHERE Email = %s AND Password = %s
-                """,
-                (email, password)
-            )
+            cur.execute("""
+                SELECT UserID, Name, Email
+                FROM users
+                WHERE Email = %s AND Password = %s
+            """, (email, password))
             user = cur.fetchone()
+
             if user:
-                return jsonify({"message": "User authenticated"}), 200
+                user_id, name, email = user
+                return jsonify({
+                    "message": "User authenticated",
+                    "user_id": user_id,
+                    "name": name,
+                    "email": email
+                }), 200
             else:
                 return jsonify({"error": "Invalid credentials"}), 401
+
     except Exception as e:
+        print("❌ Error in check_user:", e)
         return jsonify({"error": str(e)}), 500
 
-print("✅ Auth routes registered successfully.")
 
 if __name__ == "__main__":
     print("🔥 Flask app running on http://127.0.0.1:5000 ...")
