@@ -52,7 +52,7 @@ export default function SplashScreen()
                     style={[styles.roleButton, styles.pinnerButton]}
                     onPress={() => selectRole('pinner')}
                 >
-                    <Text style={styles.roleEmoji}>📍</Text>
+                    <Text style={styles.roleEmoji}>frontend/assets/pin.png</Text>
                     <Text style={styles.roleTitle}>Pinner</Text>
                     <Text style={styles.roleDescription}>Post bottle locations</Text>
                 </TouchableOpacity>
