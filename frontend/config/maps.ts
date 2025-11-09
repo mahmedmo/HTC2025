@@ -2,7 +2,7 @@ export const MAPS_CONFIG = {
     provider: 'geoapify' as 'geoapify' | 'osrm',
 
     geoapify: {
-        apiKey: 'e8229c46cabe4b3bb15e4d6e6f07f3bc',
+		apiKey: process.env.EXPO_PUBLIC_GEOAPIFY_KEY || '',
         tileUrl: 'https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=',
     },
 
