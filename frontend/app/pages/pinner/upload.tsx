@@ -1,11 +1,12 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import BackButton from '../../components/BackButton';
 import { apiService } from '../../../services/api';
+import { sessionService } from '../../../services/session';
 
 export default function UploadScreen()
 {
@@ -13,6 +14,21 @@ export default function UploadScreen()
     const insets = useSafeAreaInsets();
     const [image, setImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [userId, setUserId] = useState<number>(1);
+
+    useEffect(() =>
+    {
+        const loadSession = async () =>
+        {
+            const session = await sessionService.getSession();
+            if (session)
+            {
+                setUserId(session.userId);
+            }
+        };
+
+        loadSession();
+    }, []);
 
     const takePhoto = async () =>
     {
@@ -69,7 +85,7 @@ export default function UploadScreen()
                     lat: currentLocation.coords.latitude,
                     lng: currentLocation.coords.longitude,
                 },
-                undefined
+                userId
             );
 
             setIsUploading(false);

@@ -118,6 +118,22 @@ export const apiService = {
                 },
             });
 
+            console.log('[API] getActiveLocations - Response status:', response.status);
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            console.log('[API] getActiveLocations - Content-Type:', contentType);
+
+            if (!contentType || !contentType.includes('application/json'))
+            {
+                const text = await response.text();
+                console.error('[API] getActiveLocations - Non-JSON response:', text.substring(0, 500));
+                return {
+                    success: false,
+                    error: `Server returned non-JSON response (${response.status}). Check backend logs.`,
+                };
+            }
+
             const data = await response.json();
 
             console.log('[API] getActiveLocations - Response:', {

@@ -13,16 +13,11 @@ export default function SplashScreen() {
         {
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            const isAuthenticated = await sessionService.isAuthenticated();
+            // Auto-login with user ID 1 for development
+            await sessionService.saveSession(1, 'dev@test.com', 'Dev User');
+            console.log('[Splash] Auto-logged in as user ID 1');
 
-            if (isAuthenticated)
-            {
-                router.replace('/home');
-            }
-            else
-            {
-                router.replace('/pages/login');
-            }
+            router.replace('/home');
         };
 
         checkAuth();
