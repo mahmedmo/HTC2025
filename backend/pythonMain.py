@@ -166,6 +166,7 @@ def set_active_status():
         return jsonify({"error": str(e)}), 500
 
 
+
 # ✅ 2️⃣ Toggle IsOccupied field (flip between True/False)
 @app.route("/toggle_occupied", methods=["POST"])
 def toggle_occupied():
