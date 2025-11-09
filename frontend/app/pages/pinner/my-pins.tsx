@@ -26,6 +26,11 @@ export default function MyPinsScreen()
 {
     const router = useRouter();
 
+    const handleBackPress = () =>
+    {
+        router.back();
+    };
+
     const getStatusColor = (status: string) =>
     {
         switch (status)
@@ -72,7 +77,7 @@ export default function MyPinsScreen()
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <BackButton />
+            <BackButton onPress={handleBackPress} />
             <Text style={styles.title}>My Pins</Text>
             <ScrollView style={styles.list}>
                 {MOCK_PINS.map(pin => (
@@ -95,9 +100,9 @@ export default function MyPinsScreen()
 
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.replace('/pages/pinner/upload')}
+                onPress={() => router.push('/pages/pinner/upload')}
             >
-                <Text style={styles.buttonText}>Post New Pin</Text>
+                <Text style={styles.buttonText}>Pin Bottles</Text>
             </TouchableOpacity>
         </SafeAreaView>
     );

@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, BackHandler } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useRef } from 'react';
 import MapView, { Marker, Polyline, UrlTile, Region } from 'react-native-maps';
@@ -19,12 +19,14 @@ export default function NavigatePickupScreen()
     const router = useRouter();
     const params = useLocalSearchParams();
     const mapRef = useRef<MapView>(null);
+    const insets = useSafeAreaInsets();
 
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const [routeCoordinates, setRouteCoordinates] = useState<RoutePoint[]>([]);
     const [distance, setDistance] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
     const [loading, setLoading] = useState(true);
+    const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
     const pinLocation = {
         latitude: parseFloat(params.latitude as string),
@@ -38,9 +40,46 @@ export default function NavigatePickupScreen()
         setupNavigation();
         const locationSubscription = subscribeToLocation();
 
+        // Lock navigation - prevent back button
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            // Return true to prevent default back behavior (locked navigation)
+            return true;
+        });
+
+        // Setup timer countdown
+        const claimExpiry = params.claimExpiry ? parseInt(params.claimExpiry as string) : null;
+        if (claimExpiry)
+        {
+            const remaining = Math.max(0, Math.floor((claimExpiry - Date.now()) / 1000));
+            setTimeRemaining(remaining);
+
+            const timerInterval = setInterval(() =>
+            {
+                setTimeRemaining((prev) =>
+                {
+                    if (prev <= 0)
+                    {
+                        clearInterval(timerInterval);
+                        Alert.alert('Time Expired', 'Your claim on this pin has expired.');
+                        router.back();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            return () =>
+            {
+                locationSubscription.then(sub => sub?.remove());
+                backHandler.remove();
+                clearInterval(timerInterval);
+            };
+        }
+
         return () =>
         {
             locationSubscription.then(sub => sub?.remove());
+            backHandler.remove();
         };
     }, []);
 
@@ -134,6 +173,24 @@ export default function NavigatePickupScreen()
 
     const isNearby = distanceToPin <= 50;
 
+    const formatTime = (seconds: number): string =>
+    {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const centerToUser = () => {
+        if (mapRef.current && userLocation) {
+            mapRef.current.animateToRegion({
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+            }, 500);
+        }
+    };
+
     const confirmPickup = () =>
     {
         if (!isNearby)
@@ -164,7 +221,6 @@ export default function NavigatePickupScreen()
                     longitudeDelta: 0.02,
                 }}
                 showsUserLocation
-                followsUserLocation
                 showsMyLocationButton={false}
             >
                 <UrlTile
@@ -193,7 +249,21 @@ export default function NavigatePickupScreen()
                 </Marker>
             </MapView>
 
-            <BackButton />
+            <BackButton mode="cancel" onCancel={() => router.replace('/pages/collector/map')} />
+
+            {timeRemaining > 0 && (
+                <View style={[styles.timerContainer, { top: 20 + insets.top }]}>
+                    <Text style={styles.timerLabel}>Time Left</Text>
+                    <Text style={styles.timerValue}>{formatTime(timeRemaining)}</Text>
+                </View>
+            )}
+
+            <TouchableOpacity
+                style={[styles.centerButton, { right: 20, top: timeRemaining > 0 ? 90 + insets.top : 20 + insets.top }]}
+                onPress={centerToUser}
+            >
+                <Text style={styles.centerButtonText}>📍</Text>
+            </TouchableOpacity>
 
             <View style={styles.infoContainer}>
                 <View style={styles.stat}>
@@ -308,5 +378,53 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    timerContainer: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        backgroundColor: '#FEF3C7',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#F59E0B',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    timerLabel: {
+        fontSize: 11,
+        color: '#92400E',
+        fontWeight: '600',
+        textAlign: 'center',
+        marginBottom: 2,
+    },
+    timerValue: {
+        fontSize: 20,
+        color: '#92400E',
+        fontWeight: '700',
+        textAlign: 'center',
+        fontVariant: ['tabular-nums'],
+    },
+    centerButton: {
+        position: 'absolute',
+        right: 20,
+        backgroundColor: '#FFFFFF',
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    centerButtonText: {
+        fontSize: 24,
     },
 });
