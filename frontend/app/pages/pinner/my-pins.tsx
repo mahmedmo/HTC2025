@@ -130,7 +130,8 @@ export default function MyPinsScreen()
                             <View style={styles.header}>
                                 <View>
                                     <Text style={styles.count}>Bottle</Text>
-                                </View>
+                                    <Text style={styles.count}>{pin.bottle_count ?? 12}</Text>
+                                </View>:
                                 <View style={[styles.badge, { backgroundColor: '#10b981' }]}>
                                     <Text style={styles.badgeText}>ACTIVE</Text>
                                 </View>
