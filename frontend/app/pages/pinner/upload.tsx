@@ -39,7 +39,7 @@ export default function UploadScreen()
         {
             return;
         }
-        router.push('/pages/pinner/my-pins');
+        router.back();
     };
 
     return (
