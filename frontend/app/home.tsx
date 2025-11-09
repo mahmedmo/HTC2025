@@ -23,11 +23,14 @@ export default function HomeScreen()
         loadUserSession();
     }, []);
 
-    const selectRole = (role: 'pinner' | 'collector') =>
+    const selectRole = (role: 'pinner' | 'collector' | 'leaderboard') =>
     {
         if (role === 'pinner')
         {
             router.push('/pages/pinner/my-pins');
+        }
+        else if (role === 'leaderboard'){
+            router.push('/pages/leaderboard');
         }
         else
         {
@@ -74,18 +77,16 @@ export default function HomeScreen()
                     style={[styles.roleButton, styles.pinnerButton]}
                     onPress={() => selectRole('pinner')}
                 >
-                    <Text style={styles.roleEmoji}>📍</Text>
-                    <Text style={styles.roleTitle}>Pinner</Text>
-                    <Text style={styles.roleDescription}>Post bottle locations</Text>
+                    <Text style={styles.roleTitle}>Pin</Text>
+                    <Text style={styles.roleDescription}>Post bottles</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.roleButton, styles.collectorButton]}
                     onPress={() => selectRole('collector')}
                 >
-                    <Text style={styles.roleEmoji}>🚗</Text>
-                    <Text style={styles.roleTitle}>Collector</Text>
-                    <Text style={styles.roleDescription}>Collect and recycle</Text>
+                    <Text style={styles.roleTitle}>Collect</Text>
+                    <Text style={styles.roleDescription}>Collect bottles</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -93,11 +94,22 @@ export default function HomeScreen()
 }
 
 const styles = StyleSheet.create({
+    avatar:{
+        width: 80,
+        height: 80,
+        marginBottom: 10,
+        borderRadius: 40,
+    },
+    backgroundImage: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: 'transparent',
         padding: 20,
     },
     logoutButton: {
@@ -141,8 +153,8 @@ const styles = StyleSheet.create({
         gap: 20,
     },
     roleButton: {
-        padding: 30,
-        borderRadius: 12,
+        padding: 20,
+        borderRadius: 30, 
         alignItems: 'center',
     },
     pinnerButton: {
@@ -151,17 +163,21 @@ const styles = StyleSheet.create({
     collectorButton: {
         backgroundColor: '#3b82f6',
     },
+    leaderboardButton: {
+        backgroundColor: '#00CED1',
+    },
     roleEmoji: {
         fontSize: 48,
         marginBottom: 10,
     },
     roleTitle: {
-        fontSize: 24,
+        fontSize: 30,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 5,
     },
     roleDescription: {
+        textAlign: 'center',
         fontSize: 14,
         color: '#fff',
         opacity: 0.9,
